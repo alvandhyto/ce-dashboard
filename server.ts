@@ -5,7 +5,7 @@ import path from "path";
 
 async function startServer() {
     const app = express();
-    const PORT = 3001;
+    const PORT = 3000;
 
     app.use(express.json());
 
@@ -175,12 +175,10 @@ async function startServer() {
                 results: parsedResults,
             });
         } catch (err: any) {
-            return res
-                .status(500)
-                .json({
-                    error: "Failed to geocode query",
-                    details: err.message,
-                });
+            return res.status(500).json({
+                error: "Failed to geocode query",
+                details: err.message,
+            });
         }
     });
 
@@ -188,11 +186,9 @@ async function startServer() {
         const lat = parseFloat(req.query.lat as string);
         const lon = parseFloat(req.query.lon as string);
         if (isNaN(lat) || isNaN(lon)) {
-            return res
-                .status(400)
-                .json({
-                    error: "Valid 'lat' and 'lon' parameters are required",
-                });
+            return res.status(400).json({
+                error: "Valid 'lat' and 'lon' parameters are required",
+            });
         }
 
         const apiKey = getGoogleMapsApiKey();
@@ -305,12 +301,10 @@ async function startServer() {
                 },
             });
         } catch (err: any) {
-            return res
-                .status(500)
-                .json({
-                    error: "Failed to reverse geocode",
-                    details: err.message,
-                });
+            return res.status(500).json({
+                error: "Failed to reverse geocode",
+                details: err.message,
+            });
         }
     });
 

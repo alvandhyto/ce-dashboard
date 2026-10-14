@@ -555,7 +555,7 @@ export default function App() {
                     className="min-h-screen p-8 md:p-16 font-sans selection:bg-rose-100 dark:selection:bg-rose-900/30"
                 >
                     <div className="max-w-6xl mx-auto flex flex-col min-h-[80vh]">
-                        <header className="mb-10 flex items-center justify-between">
+                        <header className="pb-10 flex items-center justify-between">
                             <div className="flex items-center gap-6">
                                 <button
                                     onClick={() => setActiveApp(null)}
@@ -605,9 +605,9 @@ export default function App() {
                             </div>
                         </div>
 
-                        <footer className="mt-20 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-slate-100 dark:border-slate-800 pt-10">
+                        <footer className="flex flex-col md:flex-row items-center justify-between gap-6 pt-10">
                             <p className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-700 uppercase">
-                                Centralized Automation
+                                Developed by AVU
                             </p>
                         </footer>
                     </div>
@@ -626,7 +626,7 @@ export default function App() {
                     className="min-h-screen p-8 md:p-16 transition-colors font-sans selection:bg-blue-100 dark:selection:bg-blue-900/30"
                 >
                     <div className="max-w-6xl mx-auto flex flex-col min-h-[80vh]">
-                        <header className="mb-10 flex items-center justify-between">
+                        <header className="pb-10 flex items-center justify-between">
                             <div>
                                 <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase mb-1">
                                     Dashboard Delivery
@@ -667,7 +667,7 @@ export default function App() {
                             </div>
                         </div>
 
-                        <footer className="mt-20 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-slate-100 dark:border-slate-800 pt-10">
+                        <footer className="flex flex-col md:flex-row items-center justify-between pt-10">
                             <p className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-700 uppercase">
                                 Developed by AVU
                             </p>
