@@ -24,24 +24,11 @@ import {
 } from "motion/react";
 
 // Import modular apps
-import KFCConfigurator from "./apps/kfc-configurator/kfcApp";
-import LionConfigurator from "./apps/lion-configurator/lionApp";
-import ChatimeConfigurator from "./apps/chatime-configurator/chatimeApp";
 import FortigateConfigurator from "./apps/fortigate-configurator/fortigateApp";
 import Speedtest from "./apps/speedtest/speedtestApp";
-import Loopback from "./apps/loopback/loopbackApp";
 import Placeholder from "./apps/placeholder/placeholderApp";
 
-type AppType =
-    | "KFC"
-    | "LION"
-    | "CHATIME"
-    | "FORTIGATE"
-    | "SPEEDTEST"
-    | "LOOPBACK"
-    | "PLACEHOLDER"
-    | "GENERATORS"
-    | null;
+type AppType = "FORTIGATE" | "SPEEDTEST" | "PLACEHOLDER" | "GENERATORS" | null;
 
 interface AppMetadata {
     id: AppType;
@@ -92,55 +79,6 @@ const GENERATOR_APPS: AppMetadata[] = [
         ),
         color: "rose",
     },
-    {
-        id: "LOOPBACK",
-        title: "Loopback",
-        description: "Loopback interface configuration.",
-        icon: <Network className="w-6 h-6" />,
-        color: "amber",
-    },
-    {
-        id: "KFC",
-        title: "KFC Config Generator",
-        description:
-            "Bespoke KFC network architecture provisioning for 40F/30G series modules.",
-        icon: (
-            <img
-                src="/icons/kfclogo.png"
-                alt="KFC Logo"
-                className="w-10 h-10"
-            />
-        ),
-        color: "rose",
-    },
-    {
-        id: "LION",
-        title: "LION Config Generator",
-        description:
-            "Bespoke LION network architecture provisioning for 40F/30G series modules.",
-        icon: (
-            <img
-                src="/icons/lionlogo.png"
-                alt="LION Logo"
-                className="w-10 h-10"
-            />
-        ),
-        color: "rose",
-    },
-    {
-        id: "CHATIME",
-        title: "Chatime Config Generator",
-        description:
-            "Bespoke Chatime network architecture provisioning for 40F/30G series modules.",
-        icon: (
-            <img
-                src="/icons/chatimelogo.png"
-                alt="Chatime Logo"
-                className="w-10 h-10"
-            />
-        ),
-        color: "violet",
-    },
 ];
 
 interface AppCardProps {
@@ -177,7 +115,7 @@ function AppCard({ app, index, onClick }: AppCardProps) {
             onMouseMove={handleMouseMove}
             className="group relative cursor-pointer"
         >
-            <div className="h-full bg-white dark:bg-[#14181F] p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.02)] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 flex flex-col items-start overflow-hidden relative">
+            <div className="bg-white dark:bg-[#14181F] p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.02)] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 flex flex-col items-start overflow-hidden relative">
                 {/* Dynamic Glow Spotlight */}
                 <motion.div
                     className={`absolute pointer-events-none -inset-px rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0`}
@@ -331,60 +269,6 @@ export default function App() {
 
     return (
         <AnimatePresence mode="wait">
-            {activeApp === "KFC" && (
-                <motion.div
-                    key="KFC"
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={pageTransition}
-                    className="min-h-screen"
-                >
-                    <KFCConfigurator
-                        onBack={() => setActiveApp("GENERATORS")}
-                        isDarkMode={isDarkMode}
-                        toggleTheme={toggleTheme}
-                    />
-                </motion.div>
-            )}
-
-            {activeApp === "LION" && (
-                <motion.div
-                    key="LION"
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={pageTransition}
-                    className="min-h-screen"
-                >
-                    <LionConfigurator
-                        onBack={() => setActiveApp("GENERATORS")}
-                        isDarkMode={isDarkMode}
-                        toggleTheme={toggleTheme}
-                    />
-                </motion.div>
-            )}
-
-            {activeApp === "CHATIME" && (
-                <motion.div
-                    key="CHATIME"
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={pageTransition}
-                    className="min-h-screen"
-                >
-                    <ChatimeConfigurator
-                        onBack={() => setActiveApp("GENERATORS")}
-                        isDarkMode={isDarkMode}
-                        toggleTheme={toggleTheme}
-                    />
-                </motion.div>
-            )}
-
             {activeApp === "FORTIGATE" && (
                 <motion.div
                     key="FORTIGATE"
@@ -415,24 +299,6 @@ export default function App() {
                 >
                     <Speedtest
                         onBack={() => setActiveApp(null)}
-                        isDarkMode={isDarkMode}
-                        toggleTheme={toggleTheme}
-                    />
-                </motion.div>
-            )}
-
-            {activeApp === "LOOPBACK" && (
-                <motion.div
-                    key="LOOPBACK"
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={pageTransition}
-                    className="min-h-screen"
-                >
-                    <Loopback
-                        onBack={() => setActiveApp("GENERATORS")}
                         isDarkMode={isDarkMode}
                         toggleTheme={toggleTheme}
                     />
