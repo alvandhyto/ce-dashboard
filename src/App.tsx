@@ -24,7 +24,7 @@ import {
 } from "motion/react";
 
 // Import modular apps
-import FortigateConfigurator from "./apps/fortigate-configurator/fortigateApp";
+import FortigateConfigurator from "./configurators/fortigate/FortigateConfigurator";
 import Speedtest from "./apps/speedtest/speedtestApp";
 import Placeholder from "./apps/placeholder/placeholderApp";
 
