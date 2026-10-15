@@ -7,10 +7,23 @@ interface TextFieldProps {
     onChange: (value: string) => void;
     placeholder?: string;
     error?: string;
+    /** "password" masks the input. Defaults to "text". */
+    type?: "text" | "password";
+    autoFocus?: boolean;
     className?: string;
 }
 
-export function TextField({ id, label, value, onChange, placeholder, error, className }: TextFieldProps) {
+export function TextField({
+    id,
+    label,
+    value,
+    onChange,
+    placeholder,
+    error,
+    type = "text",
+    autoFocus,
+    className,
+}: TextFieldProps) {
     const errorId = `${id}-error`;
 
     return (
@@ -23,7 +36,8 @@ export function TextField({ id, label, value, onChange, placeholder, error, clas
             </label>
             <input
                 id={id}
-                type="text"
+                type={type}
+                autoFocus={autoFocus}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}

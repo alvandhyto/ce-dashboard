@@ -64,7 +64,8 @@ export type FortigateValues = Record<FortigateFieldKey, string>;
 /** Toggles that change which fields exist and how the template is filled. */
 export interface FortigateOptions {
     dualLink: boolean;
-    bgp: boolean;
+    /** Forced on when dualLink is on. Not consumed by buildReplacements yet. */
+    sdWan: boolean;
 }
 
 export const DEFAULT_LAN_IP = "192.168.1.99";
@@ -81,7 +82,6 @@ export const INITIAL_VALUES: FortigateValues = {
 };
 
 const isDualLink = (options: FortigateOptions) => options.dualLink;
-const isBGP = (options: FortigateOptions) => options.bgp;
 
 /** Order here is the order on screen. */
 export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
@@ -103,27 +103,27 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         },
         {
             key: "sid_primary",
-            label: "Main Link SID",
+            label: "Main link SID",
             placeholder: "e.g. 2020233809",
             required: true,
         },
         {
             key: "ip_primary",
-            label: "Main Link IP",
+            label: "Main link IP",
             placeholder: "e.g. 123.231.211.162",
             required: true,
             rules: [rules.ipv4()],
         },
         {
             key: "sid_secondary",
-            label: "Secondary Link SID",
+            label: "Secondary link SID",
             placeholder: "e.g. 2020233810",
             required: true,
             visible: isDualLink,
         },
         {
             key: "ip_secondary",
-            label: "Secondary Link IP",
+            label: "Secondary link IP",
             placeholder: "e.g. 1.5.12.166",
             required: true,
             visible: isDualLink,
@@ -139,7 +139,7 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         },
         {
             key: "loopback205",
-            label: "Loopback205 IP",
+            label: "Loopback 205 IP",
             placeholder: "e.g. 100.104.9.71",
             span: "full",
             required: true,
@@ -161,15 +161,15 @@ export function buildReplacements(
 
     return {
         "[HOSTNAME]": values.hostname,
-        "[SID_PRIMARY]": values.sid_primary,
+        "[sid_primary]": values.sid_primary,
         // Not in the original mapping. Harmless if the template has no such placeholder.
-        "[SID_SECONDARY]": dualLink ? values.sid_secondary : "",
-        "[IP_PRIMARY]": values.ip_primary,
-        "[IP_GATEWAY_PRIMARY]": values.ip_primary
+        "[sid_secondary]": dualLink ? values.sid_secondary : "",
+        "[ip_primary]": values.ip_primary,
+        "[IP_GATEWAY_INTERNET]": values.ip_primary
             ? subtractOneFromIP(values.ip_primary)
             : "",
-        "[IP_SECONDARY]": dualLink ? values.ip_secondary : UNUSED_IP,
-        "[IP_GATEWAY_SECONDARY]": hasSecondaryIp
+        "[IP_secondary]": dualLink ? values.ip_secondary : UNUSED_IP,
+        "[IP_GATEWAY_secondary]": hasSecondaryIp
             ? subtractOneFromIP(values.ip_secondary)
             : UNUSED_IP,
         "[IP_LAN]": getLanPrefix(lanIp),
