@@ -24,7 +24,7 @@ Everything shares one design system and one registry, so adding a new tool or ge
 | Tool            | What it does                                                                                                                                 |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Speedtest**   | Measures latency, jitter, download and upload with a live gauge. Built on the [LibreSpeed](https://github.com/librespeed/speedtest/) engine. |
-| **Generators**  | Menu of configuration generators, behind an access key. Currently: **FortiGate** (30G and 40F, FortiOS 7.2 and 7.4, single or dual link).    |
+| **Generators**  | Menu of configuration generators, behind an access key.                                                                                      |
 | **Placeholder** | Tic-tac-toe against the computer. A slot for whatever comes next.                                                                            |
 
 ## Tech stack
@@ -69,15 +69,6 @@ The app loads these at runtime. If one is missing, the matching feature shows an
 | `icons/lintaslogo.png`                                  | Speedtest header                  |
 | `speedtest_worker.js`                                   | Speedtest (the LibreSpeed worker) |
 | `templates/fortigate/Template <series> <firmware>.conf` | FortiGate generator               |
-
-FortiGate templates are named after the model and firmware chosen in the form, for example:
-
-```
-public/templates/fortigate/Template 30G 7.2.conf
-public/templates/fortigate/Template 30G 7.4.conf
-public/templates/fortigate/Template 40F 7.2.conf
-public/templates/fortigate/Template 40F 7.4.conf
-```
 
 The speedtest worker talks to a LibreSpeed backend. Its endpoints and options are configured through the worker and the engine's `setParameter`; see the LibreSpeed documentation for what the backend needs to serve.
 
@@ -220,17 +211,17 @@ Pick a model and firmware, choose single or dual link, fill in the parameters an
 
 **Template placeholders.** The generator replaces these in the template:
 
-| Placeholder              | Value                                                                                          |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `[HOSTNAME]`             | Hostname                                                                                       |
-| `[sid_primary]`          | Main link SID                                                                                  |
-| `[sid_secondary]`        | Secondary link SID (empty on single link)                                                      |
-| `[ip_primary]`           | Main link IP                                                                                   |
-| `[IP_GATEWAY_INTERNET]`  | Main link IP minus one                                                                         |
-| `[IP_secondary]`         | Secondary link IP, or `0.0.0.0` on single link                                                 |
-| `[IP_GATEWAY_secondary]` | Secondary link IP minus one, or `0.0.0.0`                                                      |
-| `[IP_LAN]`               | LAN network: first three octets of the LAN IP followed by `.0` (default LAN IP `192.168.1.99`) |
-| `[IP_LOOPBACK205]`       | Loopback 205 IP                                                                                |
+| Placeholder                   | Value                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `[HOSTNAME]`                  | Hostname                                                                                       |
+| `[SID_PRIMARY_LINK]`          | Main link SID                                                                                  |
+| `[SID_SECONDARY_LINK]`        | Secondary link SID (empty on single link)                                                      |
+| `[IP_PRIMARY_LINK]`           | Main link IP                                                                                   |
+| `[IP_GATEWAY_PRIMARY_LINK]`   | Main link IP minus one                                                                         |
+| `[IP_SECONDARY_LINK]`         | Secondary link IP, or `0.0.0.0` on single link                                                 |
+| `[IP_GATEWAY_SECONDARY_LINK]` | Secondary link IP minus one, or `0.0.0.0`                                                      |
+| `[IP_LAN]`                    | LAN network: first three octets of the LAN IP followed by `.0` (default LAN IP `192.168.1.99`) |
+| `[IP_LOOPBACK205]`            | Loopback 205 IP                                                                                |
 
 Replacement happens in a single pass, so a value can never be re-scanned as a placeholder. If the generated config still contains something shaped like `[NAME]`, a warning lists it. That usually means a template and `buildReplacements` have drifted apart.
 
