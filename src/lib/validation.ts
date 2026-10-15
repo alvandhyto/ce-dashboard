@@ -22,10 +22,10 @@ export interface FieldDef<K extends string, C = unknown> {
 export type FieldErrors<K extends string> = Partial<Record<K, string>>;
 
 export const rules = {
-    ipv4:
-        (): Rule =>
-        (value) =>
-            isValidIPv4(value) ? null : "Enter a valid IPv4 address, for example 10.0.0.1.",
+    ipv4: (): Rule => (value) =>
+        isValidIPv4(value)
+            ? null
+            : "Enter a valid IPv4 address, for example 10.0.0.1.",
 
     maxLength:
         (max: number): Rule =>
@@ -37,6 +37,16 @@ export const rules = {
         (regex: RegExp, message: string): Rule =>
         (value) =>
             regex.test(value) ? null : message,
+
+    privateAsn: (): Rule => (value) => {
+        if (!/^\d+$/.test(value)) return "Enter a valid private AS number.";
+
+        const asn = Number(value);
+        return (asn >= 64512 && asn <= 65534) ||
+            (asn >= 4200000000 && asn <= 4294967294)
+            ? null
+            : "Enter a private AS number (64512–65534 or 4200000000–4294967294).";
+    },
 };
 
 export function getVisibleFields<K extends string, C>(
@@ -57,7 +67,8 @@ export function validateFields<K extends string, C>(
         const value = (values[field.key] ?? "").trim();
 
         if (value === "") {
-            if (field.required) errors[field.key] = `${field.label} is required.`;
+            if (field.required)
+                errors[field.key] = `${field.label} is required.`;
             continue;
         }
 

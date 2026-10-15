@@ -57,15 +57,17 @@ export type FortigateFieldKey =
     | "sid_secondary"
     | "ip_secondary"
     | "ip_lan"
-    | "loopback205";
+    | "loopback205"
+    | "bgp_local_asn"
+    | "bgp_remote_asn"
+    | "bgp_neighbor";
 
 export type FortigateValues = Record<FortigateFieldKey, string>;
 
 /** Toggles that change which fields exist and how the template is filled. */
 export interface FortigateOptions {
     dualLink: boolean;
-    /** Forced on when dualLink is on. Not consumed by buildReplacements yet. */
-    sdWan: boolean;
+    bgp: boolean;
 }
 
 export const DEFAULT_LAN_IP = "192.168.1.99";
@@ -79,9 +81,13 @@ export const INITIAL_VALUES: FortigateValues = {
     ip_secondary: "",
     ip_lan: DEFAULT_LAN_IP,
     loopback205: "",
+    bgp_local_asn: "",
+    bgp_remote_asn: "",
+    bgp_neighbor: "",
 };
 
 const isDualLink = (options: FortigateOptions) => options.dualLink;
+const isBGP = (options: FortigateOptions) => options.bgp;
 
 /** Order here is the order on screen. */
 export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
@@ -103,13 +109,13 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         },
         {
             key: "sid_primary",
-            label: "Primary Link SID",
+            label: "Main Link SID",
             placeholder: "e.g. 2020233809",
             required: true,
         },
         {
             key: "ip_primary",
-            label: "Primary Link IP",
+            label: "Main Link IP",
             placeholder: "e.g. 123.231.211.162",
             required: true,
             rules: [rules.ipv4()],
@@ -133,16 +139,38 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
             key: "ip_lan",
             label: "LAN IP",
             placeholder: `e.g. ${DEFAULT_LAN_IP}`,
-            span: "full",
             // Optional: an empty value falls back to DEFAULT_LAN_IP.
             rules: [rules.ipv4()],
         },
         {
             key: "loopback205",
-            label: "Loopback 205 IP",
+            label: "Loopback205 IP",
             placeholder: "e.g. 100.104.9.71",
-            span: "full",
             required: true,
+            rules: [rules.ipv4()],
+        },
+        {
+            key: "bgp_local_asn",
+            label: "BGP Local ASN",
+            placeholder: "e.g. 65001",
+            required: true,
+            visible: isBGP,
+            rules: [rules.privateAsn()],
+        },
+        {
+            key: "bgp_remote_asn",
+            label: "BGP Remote ASN",
+            placeholder: "e.g. 65002",
+            required: true,
+            visible: isBGP,
+            rules: [rules.privateAsn()],
+        },
+        {
+            key: "bgp_neighbor",
+            label: "BGP Neighbor IP",
+            placeholder: "e.g. 192.168.1.1",
+            required: true,
+            visible: isBGP,
             rules: [rules.ipv4()],
         },
     ];
@@ -161,15 +189,15 @@ export function buildReplacements(
 
     return {
         "[HOSTNAME]": values.hostname,
-        "[sid_primary]": values.sid_primary,
+        "[SID_PRIMARY]": values.sid_primary,
         // Not in the original mapping. Harmless if the template has no such placeholder.
-        "[sid_secondary]": dualLink ? values.sid_secondary : "",
-        "[ip_primary]": values.ip_primary,
-        "[IP_GATEWAY_INTERNET]": values.ip_primary
+        "[SID_SECONDARY]": dualLink ? values.sid_secondary : "",
+        "[IP_PRIMARY]": values.ip_primary,
+        "[IP_GATEWAY_PRIMARY]": values.ip_primary
             ? subtractOneFromIP(values.ip_primary)
             : "",
-        "[IP_secondary]": dualLink ? values.ip_secondary : UNUSED_IP,
-        "[IP_GATEWAY_secondary]": hasSecondaryIp
+        "[IP_SECONDARY]": dualLink ? values.ip_secondary : UNUSED_IP,
+        "[IP_GATEWAY_SECONDARY]": hasSecondaryIp
             ? subtractOneFromIP(values.ip_secondary)
             : UNUSED_IP,
         "[IP_LAN]": getLanPrefix(lanIp),

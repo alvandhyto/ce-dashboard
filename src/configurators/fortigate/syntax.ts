@@ -7,7 +7,8 @@ export function classifyFortigateLine(line: string): LineKind {
     if (text === "") return "plain";
     if (text.startsWith("#")) return "comment";
     if (/^(config|edit)\b/.test(text)) return "keyword";
-    if (/^(set|unset|append|unappend|select|unselect)\b/.test(text)) return "setting";
+    if (/^(set|unset|append|unappend|select|unselect)\b/.test(text))
+        return "setting";
     if (/^(end|next)$/.test(text)) return "end";
     return "plain";
 }

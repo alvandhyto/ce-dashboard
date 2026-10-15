@@ -50,12 +50,10 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const [series, setSeries] = useState<Series>(DEFAULT_SERIES);
     const [firmware, setFirmware] = useState<FirmwareVersion>(DEFAULT_FIRMWARE);
     const [dualLink, setDualLink] = useState(false);
-    const [sdWanChoice, setSdWanChoice] = useState(false);
+    const [bgp, setBGP] = useState(false);
     const [generated, setGenerated] = useState<GeneratedConfig | null>(null);
 
-    // Dual link requires SD-WAN, so derive it instead of keeping two states in sync.
-    const sdWan = dualLink || sdWanChoice;
-    const options: FortigateOptions = { dualLink, sdWan };
+    const options: FortigateOptions = { dualLink, bgp };
 
     const form = useConfigForm({
         initialValues: INITIAL_VALUES,
@@ -115,7 +113,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const handleReset = () => {
         form.reset();
         setDualLink(false);
-        setSdWanChoice(false);
+        setBGP(false);
         setGenerated(null);
         dismissToast();
     };
@@ -197,20 +195,13 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                 <div className="grid grid-cols-2 gap-3">
                                     <ToggleCard
                                         label="Dual Link"
-                                        description="Adds a secondary broadband link"
                                         checked={dualLink}
                                         onChange={setDualLink}
                                     />
                                     <ToggleCard
-                                        label="SD-WAN"
-                                        description={
-                                            dualLink
-                                                ? "Required for dual link"
-                                                : "Optional for single link"
-                                        }
-                                        checked={sdWan}
-                                        disabled={dualLink}
-                                        onChange={setSdWanChoice}
+                                        label="Custom BGP"
+                                        checked={bgp}
+                                        onChange={setBGP}
                                     />
                                 </div>
                             </fieldset>
