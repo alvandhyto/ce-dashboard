@@ -9,7 +9,7 @@ import { ConfiguratorLayout } from "../../components/configurator/ConfiguratorLa
 import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SelectField } from "../../components/ui/SelectField";
 import { Toast } from "../../components/ui/Toast";
@@ -137,12 +137,9 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                         onBack={onBack}
                         width="wide"
                         actions={
-                            <Button
-                                icon={<RotateCcw className="h-4 w-4" />}
-                                onClick={handleReset}
-                            >
-                                Reset
-                            </Button>
+                            <IconButton onClick={handleReset} label="Reset">
+                                <RotateCcw className="h-4 w-4" />
+                            </IconButton>
                         }
                     />
                 }
@@ -153,18 +150,18 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                         className="flex min-h-0 flex-1 flex-col"
                     >
                         <Panel
-                            title="Parameters"
+                            title="PARAMETERS"
                             bodyClassName="space-y-6 p-5"
                             footer={
                                 <Button
                                     type="submit"
                                     variant="primary"
                                     size="lg"
-                                    className="w-full"
+                                    className="w-full uppercase tracking-tighter"
                                     icon={<Terminal className="h-4 w-4" />}
                                     disabled={templateStatus !== "ready"}
                                 >
-                                    Generate config
+                                    Generate Configuration
                                 </Button>
                             }
                         >
@@ -195,11 +192,11 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
 
                             <fieldset>
                                 <legend className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                    Link setup
+                                    Link Setup
                                 </legend>
                                 <div className="grid grid-cols-2 gap-3">
                                     <ToggleCard
-                                        label="Dual link"
+                                        label="Dual Link"
                                         description="Adds a secondary broadband link"
                                         checked={dualLink}
                                         onChange={setDualLink}

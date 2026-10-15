@@ -22,7 +22,8 @@ const VARIANTS: Record<Exclude<Variant, "primary">, string> = {
         "text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400/50 " +
         "dark:text-slate-300 dark:hover:bg-white/5 disabled:opacity-50",
     danger:
-        "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/50 " + PRIMARY_DISABLED,
+        "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/50 " +
+        PRIMARY_DISABLED,
 };
 
 const SIZES: Record<Size, string> = {
@@ -53,7 +54,9 @@ export function Button({
     ...rest
 }: ButtonProps) {
     const variantClass =
-        variant === "primary" ? `${ACCENTS[accent].solid} ${PRIMARY_DISABLED}` : VARIANTS[variant];
+        variant === "primary"
+            ? `${ACCENTS[accent].solid} ${PRIMARY_DISABLED}`
+            : VARIANTS[variant];
 
     return (
         <button
@@ -68,14 +71,22 @@ export function Button({
     );
 }
 
-interface IconButtonProps
-    extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "aria-label"> {
+interface IconButtonProps extends Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    "children" | "aria-label"
+> {
     /** Accessible name, also shown as the tooltip. */
     label: string;
     children: ReactNode;
 }
 
-export function IconButton({ label, className, type = "button", children, ...rest }: IconButtonProps) {
+export function IconButton({
+    label,
+    className,
+    type = "button",
+    children,
+    ...rest
+}: IconButtonProps) {
     return (
         <button
             type={type}

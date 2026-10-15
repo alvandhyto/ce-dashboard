@@ -23,7 +23,12 @@ export function GeneratorsPage({ onOpen, onBack }: GeneratorsPageProps) {
                 onBack={onBack}
             />
 
-            <main className={cn(containerClass(), "flex-1 py-8 sm:py-10")}>
+            <main
+                className={cn(
+                    containerClass(),
+                    "flex-1 py-8 sm:py-10 justify-center flex flex-col gap-8",
+                )}
+            >
                 <LauncherGrid>
                     {GENERATOR_LAUNCHERS.map(({ key, route, ...card }) => (
                         <AppCard

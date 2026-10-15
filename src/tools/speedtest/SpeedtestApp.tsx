@@ -59,13 +59,13 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     />
                 }
                 onBack={onBack}
-                width="narrow"
+                width="wide"
             />
 
             <main
                 className={cn(
                     containerClass("narrow"),
-                    "flex flex-1 flex-col items-center gap-8 py-10",
+                    "flex flex-1 flex-col items-center gap-8 justify-center",
                 )}
             >
                 <SpeedGauge
@@ -97,10 +97,10 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     onClick={running ? abort : start}
                 >
                     {running
-                        ? "Cancel"
+                        ? "CANCEL"
                         : stage === "COMPLETE"
-                          ? "Test again"
-                          : "Start speedtest"}
+                          ? "TEST AGAIN"
+                          : "START SPEEDTEST"}
                 </Button>
             </main>
         </AppShell>

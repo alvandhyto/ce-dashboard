@@ -25,7 +25,7 @@ export function AppHeader({
     icon,
     onBack,
     actions,
-    width = "default",
+    width = "wide",
 }: AppHeaderProps) {
     return (
         <header className="border-b border-slate-200 bg-white dark:border-white/10 dark:bg-[#151A22]">
@@ -43,11 +43,11 @@ export function AppHeader({
                     )}
                     {icon}
                     <div className="min-w-0">
-                        <h1 className="truncate text-base font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                        <h1 className="truncate text-base font-bold leading-tight text-slate-900 dark:text-slate-100 uppercase tracking-tight">
                             {title}
                         </h1>
                         {subtitle && (
-                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400 uppercase tracking-tighter">
                                 {subtitle}
                             </p>
                         )}

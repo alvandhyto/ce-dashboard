@@ -14,7 +14,14 @@ export interface AppCardProps {
 }
 
 /** Launcher tile for the dashboard and the generator menu. The whole card is one button. */
-export function AppCard({ title, description, icon, accent, restricted, onClick }: AppCardProps) {
+export function AppCard({
+    title,
+    description,
+    icon,
+    accent,
+    restricted,
+    onClick,
+}: AppCardProps) {
     return (
         <button
             type="button"
@@ -31,7 +38,9 @@ export function AppCard({ title, description, icon, accent, restricted, onClick 
                 )}
             </div>
 
-            <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+                {title}
+            </h2>
             <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                 {description}
             </p>

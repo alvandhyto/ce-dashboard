@@ -46,7 +46,7 @@ export default function PlaceholderApp({ onBack }: AppProps) {
                     </AppIcon>
                 }
                 onBack={onBack}
-                width="narrow"
+                width="wide"
                 actions={
                     <div className="mr-2 flex items-center gap-4">
                         <Score label="You" value={score.player} />
@@ -58,7 +58,7 @@ export default function PlaceholderApp({ onBack }: AppProps) {
             <main
                 className={cn(
                     containerClass("narrow"),
-                    "flex flex-1 flex-col items-center justify-center gap-6 py-10",
+                    "flex flex-1 flex-col items-center justify-center gap-6",
                 )}
             >
                 <Board board={board} interactive={canPlay} onPlay={play} />
@@ -78,7 +78,7 @@ export default function PlaceholderApp({ onBack }: AppProps) {
                             icon={<Play className="h-4 w-4" />}
                             onClick={start}
                         >
-                            {phase === "over" ? "Play again" : "Start game"}
+                            {phase === "over" ? "PLAY AGAIN" : "START GAME"}
                         </Button>
                     )}
                 </div>

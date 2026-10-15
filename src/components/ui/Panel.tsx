@@ -31,15 +31,24 @@ export function Panel({
             )}
         >
             {(title || actions) && (
-                <header className="flex min-h-[3.25rem] items-center justify-between gap-3 border-b border-slate-200 px-5 dark:border-white/10">
+                <header className="flex min-h-[3.25rem] items-center justify-between gap-3 border-b border-slate-200 px-5 dark:border-white/10 tracking-tight">
                     <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {title}
                     </h2>
-                    {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+                    {actions && (
+                        <div className="flex shrink-0 items-center gap-2">
+                            {actions}
+                        </div>
+                    )}
                 </header>
             )}
 
-            <div className={cn("custom-scrollbar min-h-0 flex-1 overflow-y-auto", bodyClassName)}>
+            <div
+                className={cn(
+                    "custom-scrollbar min-h-0 flex-1 overflow-y-auto",
+                    bodyClassName,
+                )}
+            >
                 {children}
             </div>
 

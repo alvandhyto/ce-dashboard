@@ -17,7 +17,12 @@ export function DashboardPage({ onOpen }: { onOpen: (route: Route) => void }) {
                 subtitle="Hasil isengnya Dhyto"
             />
 
-            <main className={cn(containerClass(), "flex-1 py-8 sm:py-10")}>
+            <main
+                className={cn(
+                    containerClass(),
+                    "flex-1 py-8 sm:py-10 justify-center flex flex-col gap-8",
+                )}
+            >
                 <LauncherGrid>
                     {DASHBOARD_LAUNCHERS.map(({ key, route, ...card }) => (
                         <AppCard
