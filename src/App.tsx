@@ -6,8 +6,8 @@ import {
     DASHBOARD_ROUTE,
     isProtectedRoute,
     parentRoute,
-} from "./app/registry";
-import type { Route } from "./app/types";
+} from "./core/registry";
+import type { Route } from "./core/types";
 import { PageTransition } from "./components/layout/PageTransition";
 import { ThemeProvider } from "./hooks/useTheme";
 import { useAccessGate } from "./hooks/useAccessGate";
@@ -40,18 +40,31 @@ function Router() {
         if (protectedRoute && !gate.unlocked) {
             return {
                 key: "gate",
-                node: <AccessGatePage onSubmit={gate.unlock} onCancel={() => setRoute(DASHBOARD_ROUTE)} />,
+                node: (
+                    <AccessGatePage
+                        onSubmit={gate.unlock}
+                        onCancel={() => setRoute(DASHBOARD_ROUTE)}
+                    />
+                ),
             };
         }
 
         switch (route.name) {
             case "dashboard":
-                return { key: "dashboard", node: <DashboardPage onOpen={setRoute} /> };
+                return {
+                    key: "dashboard",
+                    node: <DashboardPage onOpen={setRoute} />,
+                };
 
             case "generators":
                 return {
                     key: "generators",
-                    node: <GeneratorsPage onOpen={setRoute} onBack={() => setRoute(DASHBOARD_ROUTE)} />,
+                    node: (
+                        <GeneratorsPage
+                            onOpen={setRoute}
+                            onBack={() => setRoute(DASHBOARD_ROUTE)}
+                        />
+                    ),
                 };
 
             case "app": {
@@ -59,7 +72,11 @@ function Router() {
                 const AppComponent = app.component;
                 return {
                     key: `app:${app.id}`,
-                    node: <AppComponent onBack={() => setRoute(parentRoute(app.section))} />,
+                    node: (
+                        <AppComponent
+                            onBack={() => setRoute(parentRoute(app.section))}
+                        />
+                    ),
                 };
             }
         }

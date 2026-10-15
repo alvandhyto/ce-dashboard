@@ -1,15 +1,15 @@
 /**
  * The one place that knows which apps exist.
  *
- * To add an app: build it under apps/ or configurators/, add its id to AppId in
+ * To add an app: build it under tools/ or configurators/, add its id to AppId in
  * types.ts, then add one entry to APPS below. The dashboard, the generator menu,
  * navigation and the access gate all read from here.
  */
 import { ArrowUpDown, Folder, Terminal } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
-import PlaceholderApp from "../apps/placeholder";
-import SpeedtestApp from "../apps/speedtest";
+import PlaceholderApp from "../tools/placeholder";
+import SpeedtestApp from "../tools/speedtest";
 import FortigateConfigurator from "../configurators/fortigate";
 import type { Accent } from "../lib/accent";
 import type { AppId, AppProps, Route, Section } from "./types";

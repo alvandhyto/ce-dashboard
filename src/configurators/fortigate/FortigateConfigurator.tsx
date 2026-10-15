@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { RotateCcw, Terminal } from "lucide-react";
 
-import { ConfigPreview, type PreviewState } from "../../components/configurator/ConfigPreview";
+import {
+    ConfigPreview,
+    type PreviewState,
+} from "../../components/configurator/ConfigPreview";
 import { ConfiguratorLayout } from "../../components/configurator/ConfiguratorLayout";
 import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
@@ -11,7 +14,7 @@ import { Panel } from "../../components/ui/Panel";
 import { SelectField } from "../../components/ui/SelectField";
 import { Toast } from "../../components/ui/Toast";
 import { ToggleCard } from "../../components/ui/ToggleCard";
-import type { AppProps } from "../../app/types";
+import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
 import { useTemplate } from "../../hooks/useTemplate";
 import { useToast } from "../../hooks/useToast";
@@ -54,13 +57,25 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const sdWan = dualLink || sdWanChoice;
     const options: FortigateOptions = { dualLink, sdWan };
 
-    const form = useConfigForm({ initialValues: INITIAL_VALUES, fields: FIELDS, context: options });
-    const { status: templateStatus, template, error: templateError, retry } = useTemplate(
-        templateUrl(series, firmware),
-    );
+    const form = useConfigForm({
+        initialValues: INITIAL_VALUES,
+        fields: FIELDS,
+        context: options,
+    });
+    const {
+        status: templateStatus,
+        template,
+        error: templateError,
+        retry,
+    } = useTemplate(templateUrl(series, firmware));
     const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
-    const currentSignature = JSON.stringify({ series, firmware, options, values: form.trimmedValues });
+    const currentSignature = JSON.stringify({
+        series,
+        firmware,
+        options,
+        values: form.trimmedValues,
+    });
     const previewState: PreviewState = !generated
         ? "empty"
         : generated.signature === currentSignature
@@ -71,7 +86,10 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         if (!template) return;
         if (!form.validate()) return;
 
-        const content = renderTemplate(template, buildReplacements(form.trimmedValues, options));
+        const content = renderTemplate(
+            template,
+            buildReplacements(form.trimmedValues, options),
+        );
         setGenerated({
             content,
             filename: outputFileName(form.trimmedValues.hostname),
@@ -129,7 +147,11 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                     />
                 }
                 sidebar={
-                    <form noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <form
+                        noValidate
+                        onSubmit={handleSubmit}
+                        className="flex min-h-0 flex-1 flex-col"
+                    >
                         <Panel
                             title="Parameters"
                             bodyClassName="space-y-6 p-5"
@@ -184,7 +206,11 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                     />
                                     <ToggleCard
                                         label="SD-WAN"
-                                        description={dualLink ? "Required for dual link" : "Optional for single link"}
+                                        description={
+                                            dualLink
+                                                ? "Required for dual link"
+                                                : "Optional for single link"
+                                        }
                                         checked={sdWan}
                                         disabled={dualLink}
                                         onChange={setSdWanChoice}

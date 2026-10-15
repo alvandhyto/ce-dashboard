@@ -1,5 +1,5 @@
 import { Activity, Clock, Download, Upload } from "lucide-react";
-import type { AppProps } from "../../app/types";
+import type { AppProps } from "../../core/types";
 import { AppHeader } from "../../components/layout/AppHeader";
 import { AppShell } from "../../components/layout/AppShell";
 import { containerClass } from "../../components/layout/container";
@@ -11,14 +11,39 @@ import { SpeedGauge } from "./SpeedGauge";
 import { useSpeedtest } from "./useSpeedtest";
 
 export default function SpeedtestApp({ onBack }: AppProps) {
-    const { stage, results, displayValue, clientIp, start, abort } = useSpeedtest();
+    const { stage, results, displayValue, clientIp, start, abort } =
+        useSpeedtest();
     const running = isRunning(stage);
 
     const tiles = [
-        { label: "Latency", value: results.ping, unit: "ms", icon: <Clock className="h-4 w-4" />, active: stage === "PING" },
-        { label: "Jitter", value: results.jitter, unit: "ms", icon: <Activity className="h-4 w-4" />, active: stage === "PING" },
-        { label: "Download", value: results.download, unit: "mbps", icon: <Download className="h-4 w-4" />, active: stage === "DOWNLOAD" },
-        { label: "Upload", value: results.upload, unit: "mbps", icon: <Upload className="h-4 w-4" />, active: stage === "UPLOAD" },
+        {
+            label: "Latency",
+            value: results.ping,
+            unit: "ms",
+            icon: <Clock className="h-4 w-4" />,
+            active: stage === "PING",
+        },
+        {
+            label: "Jitter",
+            value: results.jitter,
+            unit: "ms",
+            icon: <Activity className="h-4 w-4" />,
+            active: stage === "PING",
+        },
+        {
+            label: "Download",
+            value: results.download,
+            unit: "mbps",
+            icon: <Download className="h-4 w-4" />,
+            active: stage === "DOWNLOAD",
+        },
+        {
+            label: "Upload",
+            value: results.upload,
+            unit: "mbps",
+            icon: <Upload className="h-4 w-4" />,
+            active: stage === "UPLOAD",
+        },
     ];
 
     return (
@@ -26,7 +51,13 @@ export default function SpeedtestApp({ onBack }: AppProps) {
             <AppHeader
                 title="Speedtest"
                 subtitle="Delivery Lintasarta"
-                icon={<img src="/icons/lintaslogo.png" alt="" className="h-8 w-8 shrink-0" />}
+                icon={
+                    <img
+                        src="/icons/lintaslogo.png"
+                        alt=""
+                        className="h-8 w-8 shrink-0"
+                    />
+                }
                 onBack={onBack}
                 width="narrow"
             />
@@ -65,7 +96,11 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     className="w-full"
                     onClick={running ? abort : start}
                 >
-                    {running ? "Cancel" : stage === "COMPLETE" ? "Test again" : "Start speedtest"}
+                    {running
+                        ? "Cancel"
+                        : stage === "COMPLETE"
+                          ? "Test again"
+                          : "Start speedtest"}
                 </Button>
             </main>
         </AppShell>

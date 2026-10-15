@@ -1,5 +1,5 @@
-import { GENERATOR_LAUNCHERS } from "../app/registry";
-import type { Route } from "../app/types";
+import { GENERATOR_LAUNCHERS } from "../core/registry";
+import type { Route } from "../core/types";
 import { AppShell } from "../components/layout/AppShell";
 import { AppHeader } from "../components/layout/AppHeader";
 import { containerClass } from "../components/layout/container";
@@ -26,7 +26,11 @@ export function GeneratorsPage({ onOpen, onBack }: GeneratorsPageProps) {
             <main className={cn(containerClass(), "flex-1 py-8 sm:py-10")}>
                 <LauncherGrid>
                     {GENERATOR_LAUNCHERS.map(({ key, route, ...card }) => (
-                        <AppCard key={key} {...card} onClick={() => onOpen(route)} />
+                        <AppCard
+                            key={key}
+                            {...card}
+                            onClick={() => onOpen(route)}
+                        />
                     ))}
                     <EmptySlot label="Space for a future generator" />
                 </LauncherGrid>
