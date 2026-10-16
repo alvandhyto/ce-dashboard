@@ -1,25 +1,49 @@
 import { getSubnet } from "../../lib/cidr";
+import { findUnresolvedPlaceholders, renderTemplate } from "../../lib/template";
 import {
-    findUnresolvedPlaceholders,
-    renderTemplate,
-} from "../../lib/template";
-import {
+    PORT_NAME_PATTERN,
+    UPLINK_ALLOWACCESS,
     buildReplacements,
     gatewayOf,
     type FortigateOptions,
     type FortigateValues,
 } from "./definition";
+import { parseFortiOS, serializeFortiOS, type Document } from "./fortios";
 import {
-    parseFortiOS,
-    serializeFortiOS,
-    type Document,
-} from "./fortios";
-import { applyUplinks, type UplinkPlans } from "./uplinks";
+    applyUplinks,
+    findDefaultPorts,
+    listPorts,
+    type UplinkPlans,
+} from "./uplinks";
 
 export interface GenerateResult {
     content: string;
     /** Things worth a second look. The config is still produced. */
     warnings: string[];
+}
+
+export interface TemplateLayout {
+    /** Ports an uplink can use, in template order. Empty when none could be read. */
+    ports: string[];
+    /** Port each uplink sits on in the template itself. */
+    defaults: { primary?: string; secondary?: string };
+}
+
+/** Reads the physical ports and default uplink positions from a template. Never throws. */
+export function inspectTemplate(template: string): TemplateLayout {
+    try {
+        const doc = parseFortiOS(template);
+        const defaults = findDefaultPorts(doc);
+        const uplinkPorts = [defaults.primary, defaults.secondary].filter(
+            (name): name is string => name !== undefined,
+        );
+        return {
+            ports: listPorts(doc, PORT_NAME_PATTERN, uplinkPorts),
+            defaults,
+        };
+    } catch {
+        return { ports: [], defaults: {} };
+    }
 }
 
 function toPlans({ dualLink, uplinks }: FortigateOptions): UplinkPlans {
@@ -35,7 +59,11 @@ function gatewayWarnings(
     { dualLink, uplinks }: FortigateOptions,
 ): string[] {
     const links = [
-        { label: "Main link", cidr: values.ip_primary, active: !uplinks.primary.dhcp },
+        {
+            label: "Main link",
+            cidr: values.ip_primary,
+            active: !uplinks.primary.dhcp,
+        },
         {
             label: "Secondary link",
             cidr: values.ip_secondary,
@@ -77,7 +105,11 @@ export function generateConfig(
         );
     }
     if (doc) {
-        warnings.push(...applyUplinks(doc, toPlans(options)));
+        warnings.push(
+            ...applyUplinks(doc, toPlans(options), {
+                allowaccess: UPLINK_ALLOWACCESS,
+            }),
+        );
         text = serializeFortiOS(doc);
     }
 

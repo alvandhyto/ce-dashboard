@@ -32,7 +32,7 @@ export function Panel({
         >
             {(title || actions) && (
                 <header className="flex min-h-[3.25rem] items-center justify-between gap-3 border-b border-slate-200 px-5 dark:border-white/10 tracking-tight">
-                    <h2 className="min-w-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    <h2 className="min-w-0 text-md font-semibold text-slate-900 dark:text-slate-100">
                         {title}
                     </h2>
                     {actions && (

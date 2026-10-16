@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { RotateCcw, Terminal } from "lucide-react";
 
 import {
@@ -10,12 +10,12 @@ import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SelectField } from "../../components/ui/SelectField";
 import { Toast } from "../../components/ui/Toast";
 import { ToggleCard } from "../../components/ui/ToggleCard";
-import type { AppProps } from "../../app/types";
+import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
 import { useTemplate } from "../../hooks/useTemplate";
 import { useToast } from "../../hooks/useToast";
@@ -23,23 +23,25 @@ import { useToast } from "../../hooks/useToast";
 import {
     DEFAULT_FIRMWARE,
     DEFAULT_SERIES,
-    DEFAULT_UPLINKS,
+    FALLBACK_INTERFACES,
     FIELDS,
     FIRMWARE_OPTIONS,
+    INITIAL_CHOICES,
     INITIAL_VALUES,
     SERIES_OPTIONS,
     assignDhcp,
     assignInterface,
     outputFileName,
+    resolveUplinks,
     templateFileName,
     templateUrl,
     type FirmwareVersion,
     type FortigateOptions,
     type Series,
+    type UplinkChoices,
     type UplinkRole,
-    type Uplinks,
 } from "./definition";
-import { generateConfig } from "./generate";
+import { generateConfig, inspectTemplate } from "./generate";
 import { classifyFortigateLine } from "./syntax";
 import { UplinkSection } from "./UplinkSection";
 
@@ -57,8 +59,30 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const [firmware, setFirmware] = useState<FirmwareVersion>(DEFAULT_FIRMWARE);
     const [dualLink, setDualLink] = useState(false);
     const [sdWanChoice, setSdWanChoice] = useState(false);
-    const [uplinks, setUplinks] = useState<Uplinks>(DEFAULT_UPLINKS);
+    const [choices, setChoices] = useState<UplinkChoices>(INITIAL_CHOICES);
     const [generated, setGenerated] = useState<GeneratedConfig | null>(null);
+
+    const {
+        status: templateStatus,
+        template,
+        error: templateError,
+        retry,
+    } = useTemplate(templateUrl(series, firmware));
+    const { toast, show: showToast, dismiss: dismissToast } = useToast();
+
+    // Ports and default uplink positions come from the selected template, so
+    // 30G and 40F each offer their own. Falls back to a fixed list until the
+    // template is loaded, or when its ports can't be read.
+    const layout = useMemo(
+        () => (template ? inspectTemplate(template) : null),
+        [template],
+    );
+    const ports =
+        layout && layout.ports.length > 0 ? layout.ports : FALLBACK_INTERFACES;
+    const uplinks = useMemo(
+        () => resolveUplinks(choices, ports, layout?.defaults ?? {}),
+        [choices, ports, layout],
+    );
 
     // Dual link requires SD-WAN, so derive it instead of keeping two states in sync.
     const sdWan = dualLink || sdWanChoice;
@@ -69,13 +93,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         fields: FIELDS,
         context: options,
     });
-    const {
-        status: templateStatus,
-        template,
-        error: templateError,
-        retry,
-    } = useTemplate(templateUrl(series, firmware));
-    const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
     const fieldsIn = (group: string) =>
         form.visibleFields.filter((field) => field.group === group);
@@ -86,16 +103,18 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         options,
         values: form.trimmedValues,
     });
+
     const previewState: PreviewState = !generated
         ? "empty"
         : generated.signature === currentSignature
           ? "current"
           : "outdated";
 
+    // Picking a port pins both uplinks, so a later template switch can't move the other one.
     const changeInterface = (role: UplinkRole, next: string) =>
-        setUplinks((current) => assignInterface(current, role, next));
+        setChoices(assignInterface(uplinks, role, next));
     const changeDhcp = (role: UplinkRole, dhcp: boolean) =>
-        setUplinks((current) => assignDhcp(current, role, dhcp));
+        setChoices((current) => assignDhcp(current, role, dhcp));
 
     const handleGenerate = () => {
         if (!template) return;
@@ -107,6 +126,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                 form.trimmedValues,
                 options,
             );
+
             setGenerated({
                 content,
                 filename: outputFileName(form.trimmedValues.hostname),
@@ -124,6 +144,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         } catch (error) {
             showToast(
                 "error",
+
                 error instanceof Error
                     ? error.message
                     : "The configuration could not be generated.",
@@ -140,7 +161,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         form.reset();
         setDualLink(false);
         setSdWanChoice(false);
-        setUplinks(DEFAULT_UPLINKS);
+        setChoices(INITIAL_CHOICES);
         setGenerated(null);
         dismissToast();
     };
@@ -168,12 +189,9 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                         onBack={onBack}
                         width="wide"
                         actions={
-                            <Button
-                                icon={<RotateCcw className="h-4 w-4" />}
-                                onClick={handleReset}
-                            >
-                                Reset
-                            </Button>
+                            <IconButton label="Reset" onClick={handleReset}>
+                                <RotateCcw className="h-4 w-4" />
+                            </IconButton>
                         }
                     />
                 }
@@ -254,6 +272,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                 role="primary"
                                 title="Primary Link"
                                 uplink={uplinks.primary}
+                                ports={ports}
                                 other={
                                     dualLink
                                         ? {
@@ -277,6 +296,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                     role="secondary"
                                     title="Secondary Link"
                                     uplink={uplinks.secondary}
+                                    ports={ports}
                                     other={{
                                         label: "Primary Link",
                                         uplink: uplinks.primary,

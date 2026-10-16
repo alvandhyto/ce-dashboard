@@ -1,10 +1,12 @@
-import { FieldGrid, type FieldDisplay } from "../../components/configurator/FieldGrid";
+import {
+    FieldGrid,
+    type FieldDisplay,
+} from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { SelectField } from "../../components/ui/SelectField";
 import type { FieldErrors } from "../../lib/validation";
 import {
-    UPLINK_INTERFACES,
     type FortigateFieldKey,
     type Uplink,
     type UplinkRole,
@@ -12,15 +14,18 @@ import {
 
 type Addressing = "static" | "dhcp";
 
-const ADDRESSING_OPTIONS: ReadonlyArray<{ value: Addressing; label: string }> = [
-    { value: "static", label: "Static" },
-    { value: "dhcp", label: "DHCP" },
-];
+const ADDRESSING_OPTIONS: ReadonlyArray<{ value: Addressing; label: string }> =
+    [
+        { value: "static", label: "Static" },
+        { value: "dhcp", label: "DHCP" },
+    ];
 
 interface UplinkSectionProps {
     role: UplinkRole;
     title: string;
     uplink: Uplink;
+    /** Ports the template offers, in order. */
+    ports: readonly string[];
     /** The other link, shown next to its port in the list. Null when there is no other link. */
     other: { label: string; uplink: Uplink } | null;
     onInterfaceChange: (next: string) => void;
@@ -37,6 +42,7 @@ export function UplinkSection({
     title,
     uplink,
     other,
+    ports,
     onInterfaceChange,
     onDhcpChange,
     fields,
@@ -44,9 +50,12 @@ export function UplinkSection({
     errors,
     onChange,
 }: UplinkSectionProps) {
-    const interfaceOptions = UPLINK_INTERFACES.map((name) => ({
+    const interfaceOptions = ports.map((name) => ({
         value: name,
-        label: other && other.uplink.interface === name ? `${name} (${other.label})` : name,
+        label:
+            other && other.uplink.interface === name
+                ? `${name} (${other.label})`
+                : name,
     }));
 
     return (
@@ -68,7 +77,12 @@ export function UplinkSection({
                 />
             </div>
 
-            <FieldGrid fields={fields} values={values} errors={errors} onChange={onChange} />
+            <FieldGrid
+                fields={fields}
+                values={values}
+                errors={errors}
+                onChange={onChange}
+            />
 
             {uplink.dhcp && (
                 <p className="text-xs text-slate-500 dark:text-slate-400">

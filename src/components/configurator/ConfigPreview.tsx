@@ -25,9 +25,15 @@ const KIND_CLASS: Record<LineKind, string> = {
 };
 
 const STATE_META: Record<PreviewState, { dot: string; label: string }> = {
-    empty: { dot: "bg-slate-300 dark:bg-slate-600", label: "Nothing generated yet" },
+    empty: {
+        dot: "bg-slate-300 dark:bg-slate-600",
+        label: "Nothing generated yet",
+    },
     current: { dot: "bg-emerald-500", label: "Matches the current parameters" },
-    outdated: { dot: "bg-amber-500", label: "Parameters changed since this was generated" },
+    outdated: {
+        dot: "bg-amber-500",
+        label: "Parameters changed since this was generated",
+    },
 };
 
 const plainClassifier = (): LineKind => "plain";
@@ -49,7 +55,9 @@ const ConfigLine = memo(function ConfigLine({
             >
                 {number}
             </span>
-            <span className={cn("whitespace-pre", KIND_CLASS[kind])}>{text}</span>
+            <span className={cn("whitespace-pre", KIND_CLASS[kind])}>
+                {text}
+            </span>
         </div>
     );
 });
@@ -81,7 +89,10 @@ export function ConfigPreview({
     }, [content]);
 
     const sizeLabel = useMemo(
-        () => (content ? formatBytes(new TextEncoder().encode(content).length) : ""),
+        () =>
+            content
+                ? formatBytes(new TextEncoder().encode(content).length)
+                : "",
         [content],
     );
 
@@ -91,10 +102,20 @@ export function ConfigPreview({
         <>
             <Button
                 size="sm"
-                icon={copyStatus === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                icon={
+                    copyStatus === "copied" ? (
+                        <Check className="h-3.5 w-3.5" />
+                    ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                    )
+                }
                 onClick={() => copy(content)}
             >
-                {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy"}
+                {copyStatus === "copied"
+                    ? "Copied"
+                    : copyStatus === "failed"
+                      ? "Copy failed"
+                      : "Copy"}
             </Button>
             <Button
                 size="sm"
@@ -109,7 +130,7 @@ export function ConfigPreview({
     return (
         <Panel
             title={
-                <span className="flex min-w-0 items-center gap-2 font-mono text-[13px] font-medium">
+                <span className="flex min-w-0 items-center gap-2 font-mono text-xs">
                     <FileCode className="h-4 w-4 shrink-0 text-slate-400" />
                     <span className="truncate">{filename}</span>
                 </span>
@@ -119,8 +140,16 @@ export function ConfigPreview({
             footerClassName="py-2.5"
             footer={
                 <div className="flex items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="flex min-w-0 items-center gap-2" aria-live="polite">
-                        <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
+                    <span
+                        className="flex min-w-0 items-center gap-2"
+                        aria-live="polite"
+                    >
+                        <span
+                            className={cn(
+                                "h-2 w-2 shrink-0 rounded-full",
+                                meta.dot,
+                            )}
+                        />
                         <span className="truncate">{meta.label}</span>
                     </span>
                     {content && (
@@ -141,7 +170,12 @@ export function ConfigPreview({
                 >
                     <div className="min-w-max">
                         {lines.map((line, index) => (
-                            <ConfigLine key={index} number={index + 1} text={line} kind={classifyLine(line)} />
+                            <ConfigLine
+                                key={index}
+                                number={index + 1}
+                                text={line}
+                                kind={classifyLine(line)}
+                            />
                         ))}
                     </div>
                 </div>

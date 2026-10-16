@@ -59,10 +59,30 @@ export const outputFileName = (hostname: string) =>
 /* ------------------------------------------------------------------ */
 
 /**
- * Ports an uplink can be plugged into. Make this per model if the ports differ.
- * The names must exist as `edit "<name>"` blocks in the templates.
+
+ * Which interfaces count as ports an uplink can use. The list itself is read
+ * from the selected template (see inspectTemplate): `edit` blocks under
+ * `config system interface` with `set type physical` whose name matches this.
+ * Covers wan, wan1, lan1, port1, x1, a and b. Add keywords here if a model
+ * names its ports differently.
  */
-export const UPLINK_INTERFACES = ["wan", "lan1", "lan2", "lan3", "a"] as const;
+export const PORT_NAME_PATTERN = /^(wan|lan|port|x|a|b)\d*$/i;
+
+/**
+ * Management access an uplink interface gets (`set allowaccess ...`) when the
+ * template's own uplink block doesn't carry that line. A line that is in the
+ * template wins, so Base.conf stays the source of truth.
+ */
+export const UPLINK_ALLOWACCESS = "ping snmp";
+
+/** Used only while a template is loading, or when its ports can't be read. */
+export const FALLBACK_INTERFACES = [
+    "wan",
+    "lan1",
+    "lan2",
+    "lan3",
+    "a",
+] as const;
 
 export type UplinkRole = "primary" | "secondary";
 
@@ -74,11 +94,64 @@ export interface Uplink {
 
 export type Uplinks = Record<UplinkRole, Uplink>;
 
-/** Where Base.conf puts them. */
+/** Last resort when a template says nothing about where its uplinks sit. */
 export const DEFAULT_UPLINKS: Uplinks = {
     primary: { interface: "wan", dhcp: false },
     secondary: { interface: "a", dhcp: false },
 };
+
+/**
+ * What the user picked. `interface` stays null until they pick one, which
+ * means "wherever the selected template puts this uplink".
+ */
+export type UplinkChoices = Record<
+    UplinkRole,
+    { interface: string | null; dhcp: boolean }
+>;
+
+export const INITIAL_CHOICES: UplinkChoices = {
+    primary: { interface: null, dhcp: false },
+    secondary: { interface: null, dhcp: false },
+};
+
+/**
+ * Turns the user's choices into the ports to use, for the template at hand.
+ * A choice that isn't a port of this template (after switching model, say)
+ * falls back to the template's own position, then to the first free port, and
+ * the two uplinks never share a port. The stored choice is left alone, so
+ * switching back restores it.
+ */
+export function resolveUplinks(
+    choices: UplinkChoices,
+    ports: readonly string[],
+    defaults: Partial<Record<UplinkRole, string>>,
+): Uplinks {
+    const usable = (name: string | null | undefined): name is string =>
+        !!name && (ports.length === 0 || ports.includes(name));
+
+    const pick = (role: UplinkRole, taken?: string): string => {
+        const candidates = [
+            choices[role].interface,
+            defaults[role],
+            ...ports,
+            DEFAULT_UPLINKS[role].interface,
+        ];
+        return (
+            candidates.find(
+                (name): name is string => usable(name) && name !== taken,
+            ) ?? DEFAULT_UPLINKS[role].interface
+        );
+    };
+
+    const primary = pick("primary");
+    return {
+        primary: { interface: primary, dhcp: choices.primary.dhcp },
+        secondary: {
+            interface: pick("secondary", primary),
+            dhcp: choices.secondary.dhcp,
+        },
+    };
+}
 
 /**
  * Moves an uplink to another port. When the port is taken by the other
@@ -102,11 +175,11 @@ export function assignInterface(
     };
 }
 
-export function assignDhcp(
-    uplinks: Uplinks,
+export function assignDhcp<T extends { dhcp: boolean }>(
+    uplinks: Record<UplinkRole, T>,
     role: UplinkRole,
     dhcp: boolean,
-): Uplinks {
+): Record<UplinkRole, T> {
     return { ...uplinks, [role]: { ...uplinks[role], dhcp } };
 }
 
@@ -238,7 +311,7 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         {
             key: "loopback205",
             group: "network",
-            label: "Loopback 205 IP",
+            label: "Loopback205 IP",
             placeholder: "e.g. 100.104.9.71",
             span: "full",
             required: true,

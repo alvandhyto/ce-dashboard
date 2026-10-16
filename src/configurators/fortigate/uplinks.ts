@@ -35,6 +35,12 @@ import {
     type SetNode,
 } from "./fortios";
 
+/** Values used when the template's uplink block lacks the line. */
+export interface UplinkDefaults {
+    /** e.g. "ping snmp". Added as `set allowaccess` to every uplink interface that has none. */
+    allowaccess?: string;
+}
+
 export interface UplinkPlan {
     /** Interface the uplink should end up on, e.g. "lan1". */
     interface: string;
@@ -59,7 +65,10 @@ const LABEL: Record<Role, string> = {
 /** Placeholders that mark an uplink inside the template. */
 const ANCHOR: Record<Role, { ip: string; gateway: string }> = {
     primary: { ip: "[IP_PRIMARY_LINK]", gateway: "[IP_GATEWAY_PRIMARY_LINK]" },
-    secondary: { ip: "[IP_SECONDARY_LINK]", gateway: "[IP_GATEWAY_SECONDARY_LINK]" },
+    secondary: {
+        ip: "[IP_SECONDARY_LINK]",
+        gateway: "[IP_GATEWAY_SECONDARY_LINK]",
+    },
 };
 
 /** Lines that travel with an uplink from one interface to another. */
@@ -80,10 +89,16 @@ interface Prototype {
  * Applies the plan to the document in place and returns warnings.
  * Throws when the plan can't be honoured, e.g. an interface the template lacks.
  */
-export function applyUplinks(doc: Document, plan: UplinkPlans): string[] {
+export function applyUplinks(
+    doc: Document,
+    plan: UplinkPlans,
+    defaults: UplinkDefaults = {},
+): string[] {
     const interfaces = findConfig(doc, "system interface");
     if (!interfaces) {
-        return ["The template has no `config system interface` section, so the interface and DHCP options were not applied."];
+        return [
+            "The template has no `config system interface` section, so the interface and DHCP options were not applied.",
+        ];
     }
 
     const warnings: string[] = [];
@@ -126,7 +141,9 @@ export function applyUplinks(doc: Document, plan: UplinkPlans): string[] {
         const wanted = plans[role];
         const prototype = prototypes[role];
         const target = targets[role];
-        if (wanted && prototype && target) attachLines(target, prototype.lines, wanted.dhcp);
+        if (wanted && prototype && target) {
+            attachLines(target, prototype.lines, wanted.dhcp, defaults);
+        }
     }
 
     // 4. Point references at the new interfaces.
@@ -146,6 +163,53 @@ export function applyUplinks(doc: Document, plan: UplinkPlans): string[] {
     return warnings;
 }
 
+/**
+ * Ports a user can put an uplink on: physical interfaces whose name matches
+ * `namePattern` (see PORT_NAME_PATTERN in definition.ts), plus anything in
+ * `alwaysInclude`, so the template's own uplink ports are always selectable.
+ * Returned in template order. Hard-switches, tunnels, loopbacks, aggregates and
+ * the like are skipped because they aren't `type physical`.
+ */
+export function listPorts(
+    doc: Document,
+    namePattern: RegExp,
+    alwaysInclude: readonly string[] = [],
+): string[] {
+    const interfaces = findConfig(doc, "system interface");
+    if (!interfaces) return [];
+
+    return interfaces.children
+        .filter(isEdit)
+        .filter((edit) => {
+            const name = editName(edit);
+            const type = edit.children.find((node): node is SetNode =>
+                isSet(node, "type"),
+            );
+            const physicalPort =
+                type !== undefined &&
+                valueOf(type) === "physical" &&
+                namePattern.test(name);
+            return physicalPort || alwaysInclude.includes(name);
+        })
+        .map(editName);
+}
+
+/** Where the template puts each uplink: the interface that holds its placeholders. */
+export function findDefaultPorts(doc: Document): {
+    primary?: string;
+    secondary?: string;
+} {
+    const interfaces = findConfig(doc, "system interface");
+    const found: { primary?: string; secondary?: string } = {};
+    if (!interfaces) return found;
+
+    for (const role of ROLES) {
+        const prototype = findPrototype(interfaces, role);
+        if (prototype) found[role] = prototype.name;
+    }
+    return found;
+}
+
 /* ------------------------------------------------------------------ */
 
 function findPrototype(interfaces: ConfigNode, role: Role): Prototype | null {
@@ -153,7 +217,9 @@ function findPrototype(interfaces: ConfigNode, role: Role): Prototype | null {
         .filter(isEdit)
         .find((candidate) =>
             candidate.children.some(
-                (node) => isSet(node, "ip") && valueOf(node).includes(ANCHOR[role].ip),
+                (node) =>
+                    isSet(node, "ip") &&
+                    valueOf(node).includes(ANCHOR[role].ip),
             ),
         );
 
@@ -175,11 +241,18 @@ function attachLines(
     target: EditNode,
     lines: Partial<Record<TravellingKey, SetNode>>,
     dhcp: boolean,
+    defaults: UplinkDefaults,
 ): void {
     for (const key of UPLINK_KEYS) takeSet(target, key);
 
     const address = dhcp ? newSet("mode", "dhcp") : lines.ip;
-    const before = [address, lines.alias, lines.allowaccess].filter(
+    // The template's own line wins; the default only fills a gap.
+    const allowaccess =
+        lines.allowaccess ??
+        (defaults.allowaccess
+            ? newSet("allowaccess", defaults.allowaccess)
+            : undefined);
+    const before = [address, lines.alias, allowaccess].filter(
         (line): line is SetNode => line !== undefined,
     );
     const typeIndex = target.children.findIndex((node) => isSet(node, "type"));
@@ -191,7 +264,8 @@ function attachLines(
     }
 
     target.children.splice(typeIndex, 0, ...before);
-    if (lines.role) target.children.splice(typeIndex + before.length + 1, 0, lines.role);
+    if (lines.role)
+        target.children.splice(typeIndex + before.length + 1, 0, lines.role);
 
     for (const line of [...before, lines.role]) if (line) delete line.raw;
 }
@@ -200,7 +274,10 @@ function attachLines(
  * Rewrites `set interface "x"` and `set device "x"` everywhere. All renames
  * are applied in one pass, so swapping two interfaces works.
  */
-function renameReferences(doc: Document, renames: Record<string, string>): void {
+function renameReferences(
+    doc: Document,
+    renames: Record<string, string>,
+): void {
     walk(doc, (node) => {
         if (!isSet(node, "interface") && !isSet(node, "device")) return;
 
@@ -220,7 +297,11 @@ function renameReferences(doc: Document, renames: Record<string, string>): void 
  *   `set dynamic-gateway enable` in its place.
  * - No such link (single-link site): its SD-WAN member and static route go.
  */
-function applyGateways(doc: Document, role: Role, plan: UplinkPlan | null): void {
+function applyGateways(
+    doc: Document,
+    role: Role,
+    plan: UplinkPlan | null,
+): void {
     const placeholder = ANCHOR[role].gateway;
 
     walk(doc, (node, path) => {
@@ -230,7 +311,8 @@ function applyGateways(doc: Document, role: Role, plan: UplinkPlan | null): void
         if (context !== "members" && context !== "router static") return;
 
         const gateway = node.children.find(
-            (child) => isSet(child, "gateway") && valueOf(child).includes(placeholder),
+            (child) =>
+                isSet(child, "gateway") && valueOf(child).includes(placeholder),
         );
         if (!gateway) return;
 
@@ -240,9 +322,11 @@ function applyGateways(doc: Document, role: Role, plan: UplinkPlan | null): void
             if (context === "members") {
                 removeNode(node, gateway);
             } else {
-                node.children[node.children.indexOf(gateway)] = newSet("dynamic-gateway", "enable");
+                node.children[node.children.indexOf(gateway)] = newSet(
+                    "dynamic-gateway",
+                    "enable",
+                );
             }
         }
     });
 }
-
