@@ -4,11 +4,18 @@
  *
  * To support another vendor, copy this file and change the data, not the components.
  */
-import { getSubnet, parseCidr, type Subnet } from "../../lib/cidr";
+import {
+    getWanHostIp,
+    getWanGatewayIp,
+    getFirstUsableIp,
+    getDhcpStartIp,
+    getDhcpEndIp,
+    getSubnet,
+    parseCidr,
+    type Subnet,
+} from "../../lib/cidr";
 import { rules, type FieldDef } from "../../lib/validation";
 import type { Replacements } from "../../lib/template";
-// Existing helper from the project, only used by the older placeholders.
-import { subtractOneFromIP } from "../../utils";
 
 /* ------------------------------------------------------------------ */
 /* Models and firmware                                                  */
@@ -143,7 +150,7 @@ export const INITIAL_VALUES: FortigateValues = {
 const isDualLink = (options: FortigateOptions) => options.dualLink;
 
 /** A static uplink needs an IP; a DHCP one gets its address from the provider. */
-const mainLinkIsStatic = (options: FortigateOptions) =>
+const primaryLinkIsStatic = (options: FortigateOptions) =>
     !options.uplinks.primary.dhcp;
 const secondaryLinkIsStatic = (options: FortigateOptions) =>
     options.dualLink && !options.uplinks.secondary.dhcp;
@@ -183,7 +190,7 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         {
             key: "sid_primary",
             group: "primary",
-            label: "Main link SID",
+            label: "Primary Link SID",
             placeholder: "e.g. 2020233809",
             span: "full",
             required: true,
@@ -192,17 +199,17 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         {
             key: "ip_primary",
             group: "primary",
-            label: "Main link IP",
+            label: "Primary Link IP",
             placeholder: "e.g. 123.231.211.162/30",
             span: "full",
             required: true,
-            visible: mainLinkIsStatic,
+            visible: primaryLinkIsStatic,
             rules: [ipWithPrefix("123.231.211.162/30")],
         },
         {
             key: "sid_secondary",
             group: "secondary",
-            label: "Secondary link SID",
+            label: "Secondary Link SID",
             placeholder: "e.g. 2020233810",
             span: "full",
             required: true,
@@ -212,7 +219,7 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
         {
             key: "ip_secondary",
             group: "secondary",
-            label: "Secondary link IP",
+            label: "Secondary Link IP",
             placeholder: "e.g. 1.5.12.166/30",
             span: "full",
             required: true,
@@ -284,46 +291,51 @@ export function buildReplacements(
     values: FortigateValues,
     { dualLink, uplinks }: FortigateOptions,
 ): Replacements {
-    const mainIsStatic = !uplinks.primary.dhcp;
+    const primaryIsStatic = !uplinks.primary.dhcp;
     const secondaryIsStatic = dualLink && !uplinks.secondary.dhcp;
 
-    const mainCidr = mainIsStatic ? values.ip_primary : "";
+    const primaryCidr = primaryIsStatic ? values.ip_primary : "";
     const secondaryCidr =
         secondaryIsStatic && values.ip_secondary !== ""
             ? values.ip_secondary
             : "";
     const lanCidr = values.ip_lan || DEFAULT_LAN_CIDR;
 
-    const main = getSubnet(mainCidr);
+    const primary = getSubnet(primaryCidr);
     const secondary = getSubnet(secondaryCidr);
     const lan = getSubnet(lanCidr);
 
-    const mainIp = hostOf(mainCidr);
-    const secondaryIp = hostOf(secondaryCidr);
-
     return {
         // Current placeholders (Base.conf). Addresses come as "<ip> <netmask>".
+        "[HOSTNAME]": values.hostname,
         "[SID_PRIMARY_LINK]": values.sid_primary,
-        "[IP_PRIMARY_LINK]": withNetmask(main),
-        "[IP_GATEWAY_PRIMARY_LINK]": gatewayOf(main),
+        "[IP_PRIMARY_LINK]": getWanHostIp(primaryCidr)
+            ? `${getWanHostIp(primaryCidr)} ${primary?.netmask}`
+            : "",
+        "[IP_GATEWAY_PRIMARY_LINK]": getWanGatewayIp(primaryCidr)
+            ? `${getWanGatewayIp(primaryCidr)}`
+            : "",
         "[SID_SECONDARY_LINK]": dualLink ? values.sid_secondary : "",
-        "[IP_SECONDARY_LINK]": withNetmask(secondary),
-        "[IP_GATEWAY_SECONDARY_LINK]": gatewayOf(secondary),
-        "[IP_LAN]": withNetmask(lan),
+        "[IP_SECONDARY_LINK]": getWanHostIp(secondaryCidr)
+            ? `${getWanHostIp(secondaryCidr)} ${secondary?.netmask}`
+            : "",
+        "[IP_GATEWAY_SECONDARY_LINK]": getWanGatewayIp(secondaryCidr)
+            ? `${getWanGatewayIp(secondaryCidr)}`
+            : "",
+        "[IP_LAN]": getFirstUsableIp(lanCidr)
+            ? `${getFirstUsableIp(lanCidr)} ${lan?.netmask}`
+            : "",
+        "[IP_DHCP_START]": getDhcpStartIp(lanCidr) ?? "",
+        "[IP_DHCP_END]": getDhcpEndIp(lanCidr) ?? "",
         "[IP_LOOPBACK205]": values.loopback205,
 
-        // Older placeholders, kept so templates written for them still work.
-        "[HOSTNAME]": values.hostname,
-        "[sid_primary]": values.sid_primary,
-        "[sid_secondary]": dualLink ? values.sid_secondary : "",
-        "[ip_primary]": mainIp,
-        "[IP_GATEWAY_INTERNET]": mainIp ? subtractOneFromIP(mainIp) : "",
-        "[IP_secondary]": secondaryIsStatic ? secondaryIp : UNUSED_IP,
-        "[IP_GATEWAY_secondary]": secondaryIp
-            ? subtractOneFromIP(secondaryIp)
-            : UNUSED_IP,
+        // Port each uplink sits on, e.g. wan or lan1. The secondary is empty on single link.
+        "[INTERFACE_PRIMARY_LINK]": uplinks.primary.interface,
+        "[INTERFACE_SECONDARY_LINK]": dualLink
+            ? uplinks.secondary.interface
+            : "",
 
-        ...subnetReplacements("primary", main),
+        ...subnetReplacements("primary", primary),
         ...subnetReplacements("secondary", secondary),
         ...subnetReplacements("lan", lan),
     };

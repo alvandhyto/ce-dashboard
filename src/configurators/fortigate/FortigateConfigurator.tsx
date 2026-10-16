@@ -191,11 +191,11 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                     type="submit"
                                     variant="primary"
                                     size="lg"
-                                    className="w-full"
+                                    className="w-full uppercase"
                                     icon={<Terminal className="h-4 w-4" />}
                                     disabled={templateStatus !== "ready"}
                                 >
-                                    Generate config
+                                    Generate Configuration
                                 </Button>
                             }
                         >
@@ -228,10 +228,10 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                 />
                             </FormSection>
 
-                            <FormSection title="Link setup">
+                            <FormSection title="Link Setup">
                                 <div className="grid grid-cols-2 gap-3">
                                     <ToggleCard
-                                        label="Dual link"
+                                        label="Dual Link"
                                         description="Adds a secondary link"
                                         checked={dualLink}
                                         onChange={setDualLink}
@@ -252,12 +252,12 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
 
                             <UplinkSection
                                 role="primary"
-                                title="Main link"
+                                title="Primary Link"
                                 uplink={uplinks.primary}
                                 other={
                                     dualLink
                                         ? {
-                                              label: "secondary link",
+                                              label: "Secondary Link",
                                               uplink: uplinks.secondary,
                                           }
                                         : null
@@ -275,10 +275,10 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                             {dualLink && (
                                 <UplinkSection
                                     role="secondary"
-                                    title="Secondary link"
+                                    title="Secondary Link"
                                     uplink={uplinks.secondary}
                                     other={{
-                                        label: "main link",
+                                        label: "Primary Link",
                                         uplink: uplinks.primary,
                                     }}
                                     onInterfaceChange={(next) =>
@@ -292,7 +292,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                 />
                             )}
 
-                            <FormSection title="LAN and loopback">
+                            <FormSection title="LAN and Loopback">
                                 <FieldGrid
                                     fields={fieldsIn("network")}
                                     {...sharedFieldProps}
