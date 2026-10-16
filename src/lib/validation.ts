@@ -1,3 +1,4 @@
+import { getSubnet, isUsableHost, parseCidr } from "./cidr";
 import { isValidIPv4 } from "./ip";
 
 /** Returns an error message, or null when the value is acceptable. Never receives an empty value. */
@@ -13,6 +14,8 @@ export interface FieldDef<K extends string, C = unknown> {
     placeholder?: string;
     /** "full" spans both columns of the form grid. Defaults to "half". */
     span?: "full" | "half";
+    /** Free-form tag for splitting a form into sections, e.g. "primary". */
+    group?: string;
     required?: boolean;
     /** Hidden fields are neither rendered nor validated. */
     visible?: (context: C) => boolean;
@@ -22,10 +25,44 @@ export interface FieldDef<K extends string, C = unknown> {
 export type FieldErrors<K extends string> = Partial<Record<K, string>>;
 
 export const rules = {
-    ipv4: (): Rule => (value) =>
-        isValidIPv4(value)
-            ? null
-            : "Enter a valid IPv4 address, for example 10.0.0.1.",
+    ipv4:
+        (): Rule =>
+        (value) =>
+            isValidIPv4(value) ? null : "Enter a valid IPv4 address, for example 10.0.0.1.",
+
+    /**
+     * IPv4 address with a prefix length, e.g. 10.0.0.1/30.
+     * - `prefix`: require exactly this prefix length (e.g. 30).
+     * - `requireHost`: reject the subnet's network and broadcast addresses.
+     * - `example`: shown in the error message, so it can match the field.
+     */
+    cidr:
+        (options: { prefix?: number; requireHost?: boolean; example?: string } = {}): Rule =>
+        (value) => {
+            const example = options.example ?? "10.0.0.1/30";
+
+            if (!value.includes("/")) {
+                return isValidIPv4(value)
+                    ? `Add the prefix length after a slash, for example ${example}.`
+                    : `Enter a valid IPv4 address and prefix length, for example ${example}.`;
+            }
+
+            const cidr = parseCidr(value);
+            if (!cidr) {
+                return `Enter a valid IPv4 address and prefix length, for example ${example}.`;
+            }
+
+            if (options.prefix !== undefined && cidr.prefix !== options.prefix) {
+                return `Use a /${options.prefix} prefix.`;
+            }
+
+            const subnet = getSubnet(cidr);
+            if (options.requireHost && subnet && !isUsableHost(subnet)) {
+                return `${cidr.ip} is the network or broadcast address of this /${cidr.prefix} subnet. Use an address from ${subnet.firstUsable} to ${subnet.lastUsable}.`;
+            }
+
+            return null;
+        },
 
     maxLength:
         (max: number): Rule =>
@@ -37,16 +74,6 @@ export const rules = {
         (regex: RegExp, message: string): Rule =>
         (value) =>
             regex.test(value) ? null : message,
-
-    privateAsn: (): Rule => (value) => {
-        if (!/^\d+$/.test(value)) return "Enter a valid private AS number.";
-
-        const asn = Number(value);
-        return (asn >= 64512 && asn <= 65534) ||
-            (asn >= 4200000000 && asn <= 4294967294)
-            ? null
-            : "Enter a private AS number (64512–65534 or 4200000000–4294967294).";
-    },
 };
 
 export function getVisibleFields<K extends string, C>(
@@ -67,8 +94,7 @@ export function validateFields<K extends string, C>(
         const value = (values[field.key] ?? "").trim();
 
         if (value === "") {
-            if (field.required)
-                errors[field.key] = `${field.label} is required.`;
+            if (field.required) errors[field.key] = `${field.label} is required.`;
             continue;
         }
 

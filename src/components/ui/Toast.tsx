@@ -44,7 +44,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
                         )}
                     >
                         <tone.Icon className="mt-0.5 h-4 w-4 shrink-0" />
-                        <p className="min-w-0 flex-1 break-words">{toast.message}</p>
+                        <p className="min-w-0 flex-1 whitespace-pre-line break-words">{toast.message}</p>
                         <button
                             type="button"
                             onClick={onDismiss}
