@@ -202,7 +202,6 @@ export type FortigateValues = Record<FortigateFieldKey, string>;
 export interface FortigateOptions {
     dualLink: boolean;
     /** Forced on when dualLink is on. Not consumed by buildReplacements yet. */
-    sdWan: boolean;
     uplinks: Uplinks;
 }
 

@@ -58,7 +58,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const [series, setSeries] = useState<Series>(DEFAULT_SERIES);
     const [firmware, setFirmware] = useState<FirmwareVersion>(DEFAULT_FIRMWARE);
     const [dualLink, setDualLink] = useState(false);
-    const [sdWanChoice, setSdWanChoice] = useState(false);
     const [choices, setChoices] = useState<UplinkChoices>(INITIAL_CHOICES);
     const [generated, setGenerated] = useState<GeneratedConfig | null>(null);
 
@@ -84,9 +83,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         [choices, ports, layout],
     );
 
-    // Dual link requires SD-WAN, so derive it instead of keeping two states in sync.
-    const sdWan = dualLink || sdWanChoice;
-    const options: FortigateOptions = { dualLink, sdWan, uplinks };
+    const options: FortigateOptions = { dualLink, uplinks };
 
     const form = useConfigForm({
         initialValues: INITIAL_VALUES,
@@ -160,7 +157,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const handleReset = () => {
         form.reset();
         setDualLink(false);
-        setSdWanChoice(false);
         setChoices(INITIAL_CHOICES);
         setGenerated(null);
         dismissToast();
@@ -253,17 +249,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                         description="Adds a secondary link"
                                         checked={dualLink}
                                         onChange={setDualLink}
-                                    />
-                                    <ToggleCard
-                                        label="SD-WAN"
-                                        description={
-                                            dualLink
-                                                ? "Required for dual link"
-                                                : "Optional for single link"
-                                        }
-                                        checked={sdWan}
-                                        disabled={dualLink}
-                                        onChange={setSdWanChoice}
                                     />
                                 </div>
                             </FormSection>
