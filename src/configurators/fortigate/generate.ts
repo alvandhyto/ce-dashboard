@@ -9,6 +9,7 @@ import {
     type FortigateValues,
 } from "./definition";
 import { parseFortiOS, serializeFortiOS, type Document } from "./fortios";
+import { applyOverlay } from "./overlay";
 import {
     applyUplinks,
     findDefaultPorts,
@@ -105,11 +106,11 @@ export function generateConfig(
         );
     }
     if (doc) {
+        const plans = toPlans(options);
         warnings.push(
-            ...applyUplinks(doc, toPlans(options), {
-                allowaccess: UPLINK_ALLOWACCESS,
-            }),
+            ...applyUplinks(doc, plans, { allowaccess: UPLINK_ALLOWACCESS }),
         );
+        warnings.push(...applyOverlay(doc, plans));
         text = serializeFortiOS(doc);
     }
 
