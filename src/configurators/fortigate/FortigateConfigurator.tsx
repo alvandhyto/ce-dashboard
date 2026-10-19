@@ -42,7 +42,7 @@ import {
     type UplinkRole,
 } from "./definition";
 import { generateConfig, inspectTemplate } from "./generate";
-import { classifyFortigateLine } from "./syntax";
+import { fortigateSyntax } from "../../lib/syntax";
 import { UplinkSection } from "./UplinkSection";
 
 export type { FirmwareVersion, Series } from "./definition";
@@ -311,7 +311,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                         filename={generated?.filename ?? outputFileName("")}
                         content={generated?.content ?? null}
                         state={previewState}
-                        classifyLine={classifyFortigateLine}
+                        classifyLine={fortigateSyntax}
                     />
                 }
             />

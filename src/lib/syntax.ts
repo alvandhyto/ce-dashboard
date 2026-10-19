@@ -1,7 +1,7 @@
-import type { LineKind } from "../../components/configurator/ConfigPreview";
+import type { LineKind } from "../components/configurator/ConfigPreview";
 
 /** FortiOS CLI: config/edit open blocks, set/unset assign, end/next close them, # is a comment. */
-export function classifyFortigateLine(line: string): LineKind {
+export function fortigateSyntax(line: string): LineKind {
     const text = line.trim();
 
     if (text === "") return "plain";
