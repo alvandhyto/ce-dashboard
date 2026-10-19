@@ -55,7 +55,11 @@ export interface LatencyEnv {
     fetch(
         url: string,
         init: { signal: AbortSignal; cache: "no-store" },
-    ): Promise<{ ok: boolean; status: number; arrayBuffer(): Promise<ArrayBuffer> }>;
+    ): Promise<{
+        ok: boolean;
+        status: number;
+        arrayBuffer(): Promise<ArrayBuffer>;
+    }>;
     /** Request start to first byte for this URL from Resource Timing, or null when unavailable. */
     timingFor(url: string): Promise<number | null>;
 }
@@ -69,14 +73,16 @@ export const browserEnv: LatencyEnv = {
 
         // The entry can land a moment after the response, so look twice.
         for (let attempt = 0; attempt < 2; attempt++) {
-            const entry = performance.getEntriesByName(absolute, "resource").at(-1) as
-                | PerformanceResourceTiming
-                | undefined;
+            const entry = performance
+                .getEntriesByName(absolute, "resource")
+                .at(-1) as PerformanceResourceTiming | undefined;
 
             if (entry) {
                 // Zeros mean the browser withheld the details (cross-origin without Timing-Allow-Origin).
                 const firstByte = entry.responseStart - entry.requestStart;
-                return entry.requestStart > 0 && firstByte > 0 ? firstByte : null;
+                return entry.requestStart > 0 && firstByte > 0
+                    ? firstByte
+                    : null;
             }
             await new Promise((resolve) => setTimeout(resolve, 0));
         }
@@ -84,7 +90,8 @@ export const browserEnv: LatencyEnv = {
     },
 };
 
-const abortError = () => new DOMException("The latency measurement was aborted.", "AbortError");
+const abortError = () =>
+    new DOMException("The latency measurement was aborted.", "AbortError");
 
 interface Timed {
     /** Request start until the response headers arrived. */
@@ -106,7 +113,10 @@ async function timedRequest(
 
     try {
         const started = env.now();
-        const response = await env.fetch(url, { signal: controller.signal, cache: "no-store" });
+        const response = await env.fetch(url, {
+            signal: controller.signal,
+            cache: "no-store",
+        });
         const wall = env.now() - started;
 
         await response.arrayBuffer(); // drain, so the timing entry is complete
@@ -176,7 +186,11 @@ export async function measureLatency(
         }
 
         round.push(value);
-        onProgress?.({ stats: summarizeLatency(round), done: attempt - warmup + 1, total: count });
+        onProgress?.({
+            stats: summarizeLatency(round),
+            done: attempt - warmup + 1,
+            total: count,
+        });
     }
 
     const stats = summarizeLatency(round);
