@@ -63,12 +63,11 @@ This is the key that unlocks the Generators section. Restart the dev server afte
 
 The app loads these at runtime. If one is missing, the matching feature shows an error instead of crashing.
 
-| Path                                                    | Used by                           |
-| ------------------------------------------------------- | --------------------------------- |
-| `icons/fortilogo.ico`                                   | FortiGate card and header         |
-| `icons/lintaslogo.png`                                  | Speedtest header                  |
-| `speedtest_worker.js`                                   | Speedtest (the LibreSpeed worker) |
-| `templates/fortigate/Template <series> <firmware>.conf` | FortiGate generator               |
+| Path                                                    | Used by                   |
+| ------------------------------------------------------- | ------------------------- |
+| `icons/fortilogo.ico`                                   | FortiGate card and header |
+| `icons/lintaslogo.png`                                  | Speedtest header          |
+| `templates/fortigate/Template <series> <firmware>.conf` | FortiGate generator       |
 
 The speedtest worker talks to a LibreSpeed backend. Its endpoints and options are configured through the worker and the engine's `setParameter`; see the LibreSpeed documentation for what the backend needs to serve.
 
@@ -88,7 +87,8 @@ src/
 ├── pages/                    DashboardPage, GeneratorsPage, AccessGatePage
 │
 ├── tools/                    Standalone tools
-│   ├── speedtest/            model.ts, useSpeedtest.ts, SpeedGauge, SpeedtestApp, engine
+│   ├── speedtest/            config.ts, latencyStats.ts, measureLatency.ts, model.ts, useSpeedtest.ts,
+│   │                         SpeedGauge, SpeedtestApp, speedtest.ts (LibreSpeed engine)
 │   └── placeholder/          tictactoe.ts, useTicTacToe.ts, Board, PlaceholderApp
 │
 ├── configurators/            Configuration generators, one folder per vendor
@@ -109,6 +109,19 @@ The three top-level groups that are easy to mix up:
 - **`core/`** is the shell. It holds the registry and shared types, and is not a tool itself.
 - **`tools/`** holds standalone tools such as the speedtest.
 - **`configurators/`** holds the generator family. Each vendor gets a folder.
+
+## How the speedtest measures latency
+
+A test runs in two parts. **Latency** (ping and jitter) is measured by this app in `measureLatency.ts`; **download and upload** are still measured by the LibreSpeed worker. The worker's own ping stage is switched off (`test_order` is `I_D_U` in `config.ts`), because its ping and jitter maths gave unreliable numbers: jitter jumped to tens of milliseconds on a steady link after a single slow response.
+
+How a latency test works:
+
+- It sends 2 warm-up requests (thrown away), then up to 30 tiny requests one after another to `PING_URL`, stopping after 6 seconds at the latest.
+- Each round trip is the time from request start to first byte, read from the browser's Resource Timing entry **for that request's own URL**. Connection setup and page rendering don't count. If the browser withholds Resource Timing, the whole test uses wall-clock time instead. The two are never mixed within one test.
+- **Ping** is the median round trip. **Jitter** is the mean absolute difference between consecutive round trips (RFC 3393). Isolated spikes (more than 3.5 robust standard deviations above the median, at most 20% of the samples) are left out of the jitter, so a single hiccup doesn't show up as a jitter of 50 ms. A link that is genuinely unsteady keeps its jitter, because then nothing counts as a spike. Set `SPIKE_CUTOFF` in `latencyStats.ts` to `Infinity` to count every spike.
+- If the endpoint doesn't answer, the screen says so and the download and upload still run, instead of showing a misleading 0.
+
+`PING_URL` in `config.ts` must be the same file the worker uses for `url_ping` and `url_ul` (`backend/empty.php` by default). After a run, the browser console has a `[speedtest] latency` line with the timing method, the number of samples, how many were lost and how many spikes were set aside.
 
 ## How it fits together
 
