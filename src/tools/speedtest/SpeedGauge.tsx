@@ -9,10 +9,20 @@ interface SpeedGaugeProps {
     progress: number;
     clientIp?: string | null;
     accent?: Accent;
+    /** Digits after the point. Latency is often below 10 ms, where whole numbers say little. */
+    decimals?: number;
 }
 
 /** Circular readout. The ring is drawn with pathLength=100, so dash values are plain percentages. */
-export function SpeedGauge({ value, unit, caption, progress, clientIp, accent = "blue" }: SpeedGaugeProps) {
+export function SpeedGauge({
+    value,
+    unit,
+    caption,
+    progress,
+    clientIp,
+    accent = "blue",
+    decimals = 0,
+}: SpeedGaugeProps) {
     return (
         <div className="relative h-64 w-64 md:h-72 md:w-72">
             <svg viewBox="0 0 100 100" aria-hidden className="h-full w-full -rotate-90">
@@ -43,7 +53,7 @@ export function SpeedGauge({ value, unit, caption, progress, clientIp, accent = 
             <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{caption}</span>
                 <span className="mt-1 text-6xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                    {Math.floor(value)}
+                    {decimals > 0 ? value.toFixed(decimals) : Math.floor(value)}
                 </span>
                 <span className="mt-1 text-sm text-slate-500 dark:text-slate-400">{unit}</span>
                 {clientIp && (

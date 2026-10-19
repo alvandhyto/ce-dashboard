@@ -26,14 +26,14 @@ const toNumber = (value: string): number => parseFloat(value) || 0;
 
 /**
  * LibreSpeed testState: -1 not started, 0 starting, 1 download, 2 ping,
- * 3 upload, 4 finished, 5 aborted. Returns null for states that don't change the stage.
+ * 3 upload, 4 finished, 5 aborted. The ping state never occurs here: latency is
+ * measured by measureLatency.ts and the worker is told to skip it (config.ts).
+ * Returns null for states that don't change the stage.
  */
 export function stageFromTestState(testState: number): Stage | null {
     switch (testState) {
         case 1:
             return "DOWNLOAD";
-        case 2:
-            return "PING";
         case 3:
             return "UPLOAD";
         case 4:
@@ -48,8 +48,6 @@ export function liveValue(data: SpeedtestData): number | null {
     switch (data.testState) {
         case 1:
             return toNumber(data.dlStatus);
-        case 2:
-            return toNumber(data.pingStatus);
         case 3:
             return toNumber(data.ulStatus);
         default:
@@ -57,20 +55,17 @@ export function liveValue(data: SpeedtestData): number | null {
     }
 }
 
-/** Folds one worker update into the results, keeping what hasn't been measured yet. */
+/**
+ * Folds one worker update into the results. Only download and upload come from
+ * the worker; ping and jitter are kept as they are.
+ */
 export function mergeResults(prev: Results, data: SpeedtestData): Results {
     if (data.testState >= 4) {
-        return {
-            ping: toNumber(data.pingStatus),
-            jitter: toNumber(data.jitterStatus),
-            download: toNumber(data.dlStatus),
-            upload: toNumber(data.ulStatus),
-        };
+        return { ...prev, download: toNumber(data.dlStatus), upload: toNumber(data.ulStatus) };
     }
 
     return {
-        ping: data.pingStatus && data.testState >= 2 ? toNumber(data.pingStatus) : prev.ping,
-        jitter: data.jitterStatus && data.testState >= 2 ? toNumber(data.jitterStatus) : prev.jitter,
+        ...prev,
         download: data.dlStatus && data.testState >= 1 ? toNumber(data.dlStatus) : prev.download,
         upload: data.ulStatus && data.testState >= 3 ? toNumber(data.ulStatus) : prev.upload,
     };

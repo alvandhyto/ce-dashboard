@@ -11,7 +11,7 @@ import { SpeedGauge } from "./SpeedGauge";
 import { useSpeedtest } from "./useSpeedtest";
 
 export default function SpeedtestApp({ onBack }: AppProps) {
-    const { stage, results, displayValue, clientIp, start, abort } =
+    const { stage, results, displayValue, clientIp, warning, start, abort } =
         useSpeedtest();
     const running = isRunning(stage);
 
@@ -74,6 +74,7 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     caption={STAGE_LABEL[stage]}
                     progress={gaugeProgress(stage, displayValue)}
                     clientIp={clientIp}
+                    decimals={stage === "PING" ? 1 : 0}
                 />
 
                 <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
@@ -89,6 +90,15 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     ))}
                 </div>
 
+                {warning && (
+                    <p
+                        role="status"
+                        className="w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950 dark:text-amber-100"
+                    >
+                        {warning}
+                    </p>
+                )}
+
                 <Button
                     variant={running ? "danger" : "primary"}
                     accent="blue"
@@ -99,8 +109,8 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     {running
                         ? "CANCEL"
                         : stage === "COMPLETE"
-                          ? "TEST AGAIN"
-                          : "START SPEEDTEST"}
+                          ? "RE-TEST"
+                          : "START"}
                 </Button>
             </main>
         </AppShell>
