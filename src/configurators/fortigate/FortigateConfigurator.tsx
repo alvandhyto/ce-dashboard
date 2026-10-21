@@ -17,7 +17,7 @@ import { Toast } from "../../components/ui/Toast";
 import { ToggleCard } from "../../components/ui/ToggleCard";
 import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
-import { useTemplate } from "../../hooks/useTemplate";
+import { useTemplates } from "../../hooks/useTemplates";
 import { useToast } from "../../hooks/useToast";
 
 import {
@@ -42,7 +42,7 @@ import {
     type UplinkRole,
 } from "./definition";
 import { generateConfig, inspectTemplate } from "./generate";
-import { fortigateSyntax } from "../../lib/syntax";
+import { classifyFortiOSLine } from "../../lib/syntax";
 import { UplinkSection } from "./UplinkSection";
 
 export type { FirmwareVersion, Series } from "./definition";
@@ -66,7 +66,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         template,
         error: templateError,
         retry,
-    } = useTemplate(templateUrl(series, firmware));
+    } = useTemplates([templateUrl(series, firmware)]);
     const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
     // Ports and default uplink positions come from the selected template, so
@@ -311,7 +311,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                         filename={generated?.filename ?? outputFileName("")}
                         content={generated?.content ?? null}
                         state={previewState}
-                        classifyLine={fortigateSyntax}
+                        classifyLine={classifyFortiOSLine}
                     />
                 }
             />

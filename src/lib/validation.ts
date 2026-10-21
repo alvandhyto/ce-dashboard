@@ -10,7 +10,8 @@ export type Rule = (value: string) => string | null;
  */
 export interface FieldDef<K extends string, C = unknown> {
     key: K;
-    label: string;
+    /** A function lets the label follow the form, e.g. "Hostname CPE" once a switch is included. */
+    label: string | ((context: C) => string);
     placeholder?: string;
     /** "full" spans both columns of the form grid. Defaults to "half". */
     span?: "full" | "half";
@@ -21,6 +22,11 @@ export interface FieldDef<K extends string, C = unknown> {
     visible?: (context: C) => boolean;
     rules?: Rule[];
 }
+
+/** A field with its label worked out for the current form state. */
+export type ResolvedField<K extends string, C = unknown> = Omit<FieldDef<K, C>, "label"> & {
+    label: string;
+};
 
 export type FieldErrors<K extends string> = Partial<Record<K, string>>;
 
@@ -79,8 +85,13 @@ export const rules = {
 export function getVisibleFields<K extends string, C>(
     fields: readonly FieldDef<K, C>[],
     context: C,
-): FieldDef<K, C>[] {
-    return fields.filter((field) => !field.visible || field.visible(context));
+): ResolvedField<K, C>[] {
+    return fields
+        .filter((field) => !field.visible || field.visible(context))
+        .map((field) => ({
+            ...field,
+            label: typeof field.label === "function" ? field.label(context) : field.label,
+        }));
 }
 
 export function validateFields<K extends string, C>(

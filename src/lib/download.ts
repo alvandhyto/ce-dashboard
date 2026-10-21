@@ -10,3 +10,20 @@ export function downloadTextFile(content: string, filename: string): void {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
+
+export interface TextFile {
+    filename: string;
+    content: string;
+}
+
+/**
+ * Downloads several files one after another. Browsers drop downloads that
+ * start in the same instant, so each one waits a moment. The browser may ask
+ * once whether this site may download multiple files.
+ */
+export async function downloadTextFiles(files: readonly TextFile[], delayMs = 600): Promise<void> {
+    for (const [index, file] of files.entries()) {
+        if (index > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+        downloadTextFile(file.content, file.filename);
+    }
+}

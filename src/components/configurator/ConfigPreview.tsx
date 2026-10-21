@@ -1,13 +1,13 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { Check, Copy, Download, FileCode, Terminal } from "lucide-react";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { cn } from "../../lib/cn";
 import { downloadTextFile } from "../../lib/download";
 import { Button } from "../ui/Button";
+import type { LineKind } from "../../lib/syntax";
 import { Panel } from "../ui/Panel";
 
-/** How a line should be coloured. Each vendor supplies its own classifier. */
-export type LineKind = "keyword" | "setting" | "end" | "comment" | "plain";
+export type { LineKind };
 
 /**
  * - empty:    nothing generated yet
@@ -71,13 +71,23 @@ interface ConfigPreviewProps {
     content: string | null;
     state: PreviewState;
     classifyLine?: (line: string) => LineKind;
+    /** Shown in a strip under the header, e.g. to switch between several generated files. */
+    tabs?: ReactNode;
+    /** Extra buttons in the header, before Copy and Download. */
+    extraActions?: ReactNode;
 }
 
-export function ConfigPreview({
+/**
+ * Memoised: configs can run to thousands of lines, and the page re-renders on
+ * every keystroke in the form. With unchanged props the whole list is skipped.
+ */
+export const ConfigPreview = memo(function ConfigPreview({
     filename,
     content,
     state,
     classifyLine = plainClassifier,
+    tabs,
+    extraActions,
 }: ConfigPreviewProps) {
     const { status: copyStatus, copy } = useCopyToClipboard();
 
@@ -98,44 +108,50 @@ export function ConfigPreview({
 
     const meta = STATE_META[state];
 
-    const actions = content ? (
+    const actions = (
         <>
-            <Button
-                size="sm"
-                icon={
-                    copyStatus === "copied" ? (
-                        <Check className="h-3.5 w-3.5" />
-                    ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                    )
-                }
-                onClick={() => copy(content)}
-            >
-                {copyStatus === "copied"
-                    ? "Copied"
-                    : copyStatus === "failed"
-                      ? "Copy failed"
-                      : "Copy"}
-            </Button>
-            <Button
-                size="sm"
-                icon={<Download className="h-3.5 w-3.5" />}
-                onClick={() => downloadTextFile(content, filename)}
-            >
-                Download
-            </Button>
+            {extraActions}
+            {content && (
+                <>
+                    <Button
+                        size="sm"
+                        icon={
+                            copyStatus === "copied" ? (
+                                <Check className="h-3.5 w-3.5" />
+                            ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                            )
+                        }
+                        onClick={() => copy(content)}
+                    >
+                        {copyStatus === "copied"
+                            ? "Copied"
+                            : copyStatus === "failed"
+                              ? "Copy failed"
+                              : "Copy"}
+                    </Button>
+                    <Button
+                        size="sm"
+                        icon={<Download className="h-3.5 w-3.5" />}
+                        onClick={() => downloadTextFile(content, filename)}
+                    >
+                        Download
+                    </Button>
+                </>
+            )}
         </>
-    ) : null;
+    );
 
     return (
         <Panel
             title={
-                <span className="flex min-w-0 items-center gap-2 font-mono text-xs">
+                <span className="flex min-w-0 items-center gap-2 font-mono text-[13px] font-medium">
                     <FileCode className="h-4 w-4 shrink-0 text-slate-400" />
                     <span className="truncate">{filename}</span>
                 </span>
             }
             actions={actions}
+            subheader={tabs}
             bodyClassName="bg-white dark:bg-[#0B0E14]"
             footerClassName="py-2.5"
             footer={
@@ -194,4 +210,4 @@ export function ConfigPreview({
             )}
         </Panel>
     );
-}
+});

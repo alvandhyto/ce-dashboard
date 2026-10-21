@@ -9,10 +9,15 @@ export interface Results {
     upload: number;
 }
 
-export const EMPTY_RESULTS: Results = { ping: 0, jitter: 0, download: 0, upload: 0 };
+export const EMPTY_RESULTS: Results = {
+    ping: 0,
+    jitter: 0,
+    download: 0,
+    upload: 0,
+};
 
 /** Speed at which the gauge ring is full. */
-export const GAUGE_MAX_MBPS = 600;
+export const GAUGE_MAX_MBPS = 100;
 
 export const STAGE_LABEL: Record<Stage, string> = {
     IDLE: "Ready",
@@ -61,22 +66,35 @@ export function liveValue(data: SpeedtestData): number | null {
  */
 export function mergeResults(prev: Results, data: SpeedtestData): Results {
     if (data.testState >= 4) {
-        return { ...prev, download: toNumber(data.dlStatus), upload: toNumber(data.ulStatus) };
+        return {
+            ...prev,
+            download: toNumber(data.dlStatus),
+            upload: toNumber(data.ulStatus),
+        };
     }
 
     return {
         ...prev,
-        download: data.dlStatus && data.testState >= 1 ? toNumber(data.dlStatus) : prev.download,
-        upload: data.ulStatus && data.testState >= 3 ? toNumber(data.ulStatus) : prev.upload,
+        download:
+            data.dlStatus && data.testState >= 1
+                ? toNumber(data.dlStatus)
+                : prev.download,
+        upload:
+            data.ulStatus && data.testState >= 3
+                ? toNumber(data.ulStatus)
+                : prev.upload,
     };
 }
 
 /** Ring fill, 0 to 100. Only throughput stages fill the ring; latency is in ms and has no natural scale. */
 export function gaugeProgress(stage: Stage, value: number): number {
-    if (stage !== "DOWNLOAD" && stage !== "UPLOAD" && stage !== "COMPLETE") return 0;
+    if (stage !== "DOWNLOAD" && stage !== "UPLOAD" && stage !== "COMPLETE")
+        return 0;
     return Math.min(100, Math.max(0, (value / GAUGE_MAX_MBPS) * 100));
 }
 
-export const isRunning = (stage: Stage) => stage !== "IDLE" && stage !== "COMPLETE";
+export const isRunning = (stage: Stage) =>
+    stage !== "IDLE" && stage !== "COMPLETE";
 
-export const formatMetric = (value: number) => (value > 0 ? value.toFixed(1) : "0.0");
+export const formatMetric = (value: number) =>
+    value > 0 ? value.toFixed(1) : "0.0";

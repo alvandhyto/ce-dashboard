@@ -15,7 +15,7 @@ import {
     type Subnet,
 } from "../../lib/cidr";
 import { rules, type FieldDef } from "../../lib/validation";
-import type { Replacements } from "../../lib/template";
+import type { Replacements } from "../../lib/placeholders";
 
 /* ------------------------------------------------------------------ */
 /* Models and firmware                                                  */

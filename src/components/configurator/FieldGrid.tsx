@@ -1,11 +1,11 @@
 import { fieldId } from "../../hooks/useConfigForm";
 import { cn } from "../../lib/cn";
-import type { FieldDef, FieldErrors } from "../../lib/validation";
+import type { FieldErrors, ResolvedField } from "../../lib/validation";
 import { TextField } from "../ui/TextField";
 
 /** The part of a FieldDef the grid needs to render. Lets any FieldDef<K, C> through regardless of C. */
 export type FieldDisplay<K extends string> = Pick<
-    FieldDef<K, never>,
+    ResolvedField<K, never>,
     "key" | "label" | "placeholder" | "span"
 >;
 

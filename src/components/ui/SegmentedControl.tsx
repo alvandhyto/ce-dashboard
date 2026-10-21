@@ -4,6 +4,8 @@ interface SegmentedControlProps<T extends string> {
     /** Groups the radio inputs. Must be unique on the page. */
     name: string;
     label: string;
+    /** Keep the label for screen readers only. For controls whose meaning is obvious from context. */
+    hideLabel?: boolean;
     value: T;
     options: ReadonlyArray<{ value: T; label: string }>;
     onChange: (value: T) => void;
@@ -16,13 +18,19 @@ interface SegmentedControlProps<T extends string> {
 export function SegmentedControl<T extends string>({
     name,
     label,
+    hideLabel = false,
     value,
     options,
     onChange,
 }: SegmentedControlProps<T>) {
     return (
         <fieldset>
-            <legend className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+            <legend
+                className={cn(
+                    "text-xs font-medium text-slate-600 dark:text-slate-400",
+                    hideLabel ? "sr-only" : "mb-1.5",
+                )}
+            >
                 {label}
             </legend>
             <div className="grid h-10 grid-flow-col auto-cols-fr gap-0.5 rounded-lg border border-slate-300 bg-slate-100 p-0.5 dark:border-white/15 dark:bg-[#0F1218]">

@@ -5,12 +5,13 @@
  * types.ts, then add one entry to APPS below. The dashboard, the generator menu,
  * navigation and the access gate all read from here.
  */
-import { ArrowUpDown, Folder, Terminal } from "lucide-react";
+import { Folder, Gauge, Terminal } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 import PlaceholderApp from "../tools/placeholder";
 import SpeedtestApp from "../tools/speedtest";
 import FortigateConfigurator from "../configurators/fortigate";
+import KfcConfigurator from "../configurators/kfc";
 import type { Accent } from "../lib/accent";
 import type { AppId, AppProps, Route, Section } from "./types";
 
@@ -41,7 +42,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         title: "Speedtest",
         description:
             "This speedtest application delivers accurate, real-time measurement of internet performance, including latency, jitter, download speed, upload speed.",
-        icon: <ArrowUpDown className="h-5 w-5" />,
+        icon: <Gauge className="h-5 w-5" />,
         accent: "blue",
         section: "main",
         component: SpeedtestApp,
@@ -64,6 +65,16 @@ export const APPS: Record<AppId, AppDefinition> = {
         accent: "rose",
         section: "generators",
         component: FortigateConfigurator,
+    },
+    kfc: {
+        id: "kfc",
+        title: "KFC FortiGate",
+        description:
+            "KFC branch configuration for the Project Replace Fortigate 50E: 40F, 30G, and 30G with a switch.",
+        icon: <img src="/icons/kfclogo.png" alt="" className="h-6 w-6" />,
+        accent: "rose",
+        section: "generators",
+        component: KfcConfigurator,
     },
 };
 

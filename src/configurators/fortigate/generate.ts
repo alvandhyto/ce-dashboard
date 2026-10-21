@@ -1,5 +1,8 @@
 import { getSubnet } from "../../lib/cidr";
-import { findUnresolvedPlaceholders, renderTemplate } from "../../lib/template";
+import {
+    findUnresolvedPlaceholders,
+    renderTemplate,
+} from "../../lib/placeholders";
 import {
     PORT_NAME_PATTERN,
     UPLINK_ALLOWACCESS,

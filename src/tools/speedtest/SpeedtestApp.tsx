@@ -33,14 +33,14 @@ export default function SpeedtestApp({ onBack }: AppProps) {
         {
             label: "Download",
             value: results.download,
-            unit: "mbps",
+            unit: "MBps",
             icon: <Download className="h-4 w-4" />,
             active: stage === "DOWNLOAD",
         },
         {
             label: "Upload",
             value: results.upload,
-            unit: "mbps",
+            unit: "MBps",
             icon: <Upload className="h-4 w-4" />,
             active: stage === "UPLOAD",
         },
@@ -70,7 +70,7 @@ export default function SpeedtestApp({ onBack }: AppProps) {
             >
                 <SpeedGauge
                     value={displayValue}
-                    unit={stage === "PING" ? "ms" : "mbps"}
+                    unit={stage === "PING" ? "ms" : "MBps"}
                     caption={STAGE_LABEL[stage]}
                     progress={gaugeProgress(stage, displayValue)}
                     clientIp={clientIp}
