@@ -8,7 +8,7 @@
         color-scheme: dark;
     }
     body {
-        @apply bg-[#F8FAFC] dark:bg-[#0B0E14] transition-colors duration-300;
+        @apply bg-slate-50 dark:bg-[#0F1218];
     }
 }
 

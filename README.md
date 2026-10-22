@@ -97,7 +97,8 @@ src/
 ├── pages/                    DashboardPage, GeneratorsPage, AccessGatePage
 │
 ├── tools/                    Standalone tools
-│   ├── speedtest/            model.ts, useSpeedtest.ts, SpeedGauge, SpeedtestApp, engine
+│   ├── speedtest/            config.ts, latencyStats.ts, measureLatency.ts, model.ts, useSpeedtest.ts,
+│   │                         SpeedGauge, SpeedtestApp, speedtest.ts (LibreSpeed engine)
 │   └── placeholder/          tictactoe.ts, useTicTacToe.ts, Board, PlaceholderApp
 │
 ├── configurators/            Configuration generators, one folder per vendor
@@ -220,17 +221,17 @@ Pick a model and firmware, choose single or dual link, fill in the parameters an
 
 **Template placeholders.** The generator replaces these in the template:
 
-| Placeholder              | Value                                                                                          |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| `[HOSTNAME]`             | Hostname                                                                                       |
-| `[sid_primary]`          | Main link SID                                                                                  |
-| `[sid_secondary]`        | Secondary link SID (empty on single link)                                                      |
-| `[ip_primary]`           | Main link IP                                                                                   |
-| `[IP_GATEWAY_INTERNET]`  | Main link IP minus one                                                                         |
-| `[IP_secondary]`         | Secondary link IP, or `0.0.0.0` on single link                                                 |
-| `[IP_GATEWAY_secondary]` | Secondary link IP minus one, or `0.0.0.0`                                                      |
-| `[IP_LAN]`               | LAN network: first three octets of the LAN IP followed by `.0` (default LAN IP `192.168.1.99`) |
-| `[IP_LOOPBACK205]`       | Loopback 205 IP                                                                                |
+| Placeholder                   | Value                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `[HOSTNAME]`                  | Hostname                                                                                       |
+| `[SID_PRIMARY_LINK]`          | Main link SID                                                                                  |
+| `[SID_SECONDARY_LINK]`        | Secondary link SID (empty on single link)                                                      |
+| `[IP_PRIMARY_LINK]`           | Main link IP                                                                                   |
+| `[IP_GATEWAY_PRIMARY_LINK]`   | Main link IP minus one                                                                         |
+| `[IP_SECONDARY_LINK]`         | Secondary link IP, or `0.0.0.0` on single link                                                 |
+| `[IP_GATEWAY_SECONDARY_LINK]` | Secondary link IP minus one, or `0.0.0.0`                                                      |
+| `[IP_LAN]`                    | LAN network: first three octets of the LAN IP followed by `.0` (default LAN IP `192.168.1.99`) |
+| `[IP_LOOPBACK205]`            | Loopback 205 IP                                                                                |
 
 Replacement happens in a single pass, so a value can never be re-scanned as a placeholder. If the generated config still contains something shaped like `[NAME]`, a warning lists it. That usually means a template and `buildReplacements` have drifted apart.
 
