@@ -74,7 +74,7 @@ async function startServer() {
     });
 
     // Catch-all for API to prevent HTML responses
-    app.all("/api/*", (req, res) => {
+    app.all("/api/*splat", (req, res) => {
         res.status(404).json({ error: "API Route Not Found", path: req.path });
     });
 
