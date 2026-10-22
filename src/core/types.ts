@@ -1,5 +1,10 @@
 /** Every app, generator or not, is registered under one of these ids. */
-export type AppId = "speedtest" | "placeholder" | "fortigate" | "kfc";
+export type AppId =
+    | "speedtest"
+    | "placeholder"
+    | "fortigate"
+    | "kfc"
+    | "chatime";
 
 /** Where an app lives. "generators" apps sit behind the access gate. */
 export type Section = "main" | "generators";

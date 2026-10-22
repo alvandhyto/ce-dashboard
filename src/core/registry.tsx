@@ -12,8 +12,12 @@ import PlaceholderApp from "../tools/placeholder";
 import SpeedtestApp from "../tools/speedtest";
 import FortigateConfigurator from "../configurators/fortigate";
 import KfcConfigurator from "../configurators/kfc";
+import ChatimeConfigurator from "../configurators/chatime";
+
 import type { Accent } from "../lib/accent";
 import type { AppId, AppProps, Route, Section } from "./types";
+import { title } from "process";
+import { desc } from "motion/react-client";
 
 export interface AppDefinition {
     id: AppId;
@@ -75,6 +79,16 @@ export const APPS: Record<AppId, AppDefinition> = {
         accent: "rose",
         section: "generators",
         component: KfcConfigurator,
+    },
+    chatime: {
+        id: "chatime",
+        title: "Chatime FortiGate",
+        description:
+            "Chatime branch configuration for the Project Replace Versa: 40F and 30G.",
+        icon: <img src="/icons/chatimelogo.png" alt="" className="h-6 w-6" />,
+        accent: "violet",
+        section: "generators",
+        component: ChatimeConfigurator,
     },
 };
 

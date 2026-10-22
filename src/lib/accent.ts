@@ -4,7 +4,7 @@
  * Tailwind only generates classes it can find as complete strings in the source,
  * so every class is written out in full here instead of being built from a name.
  */
-export type Accent = "blue" | "rose" | "amber";
+export type Accent = "blue" | "rose" | "amber" | "violet";
 
 interface AccentStyles {
     /** Solid fill for primary buttons. */
@@ -35,6 +35,14 @@ export const ACCENTS: Record<Accent, AccentStyles> = {
         stroke: "stroke-rose-500",
         activeCard:
             "border-rose-300 bg-rose-50/60 dark:border-rose-500/40 dark:bg-rose-500/10",
+    },
+    violet: {
+        solid: "bg-violet-600 text-white hover:bg-violet-700 focus-visible:ring-violet-500/50",
+        tile: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+        text: "text-violet-600 dark:text-violet-400",
+        stroke: "stroke-violet-500",
+        activeCard:
+            "border-violet-300 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10",
     },
     // amber-700 rather than 600 for the solid fill: white on amber-600 fails WCAG AA.
     amber: {
