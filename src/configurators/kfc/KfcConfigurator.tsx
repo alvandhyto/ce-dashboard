@@ -11,7 +11,7 @@ import {
 import type { PreviewState } from "../../components/configurator/ConfigPreview";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { Toast } from "../../components/ui/Toast";
@@ -145,12 +145,9 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                         onBack={onBack}
                         width="wide"
                         actions={
-                            <Button
-                                icon={<RotateCcw className="h-4 w-4" />}
-                                onClick={handleReset}
-                            >
-                                Reset
-                            </Button>
+                            <IconButton label="Reset" onClick={handleReset}>
+                                <RotateCcw className="h-4 w-4" />
+                            </IconButton>
                         }
                     />
                 }
@@ -168,19 +165,19 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                                     type="submit"
                                     variant="primary"
                                     size="lg"
-                                    className="w-full"
+                                    className="w-full uppercase"
                                     icon={<Terminal className="h-4 w-4" />}
                                     disabled={templateStatus !== "ready"}
                                 >
                                     {hasSwitch(series)
-                                        ? "Generate configs"
-                                        : "Generate config"}
+                                        ? "Generate Configurations"
+                                        : "Generate Configuration"}
                                 </Button>
                             }
                         >
                             <FormSection title="Device">
                                 <SegmentedControl
-                                    name="kfc-series"
+                                    id="kfc-series"
                                     label="Model"
                                     value={series}
                                     options={SERIES_OPTIONS}
@@ -198,7 +195,7 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                                 />
                             </FormSection>
 
-                            <FormSection title="Internet link">
+                            <FormSection title="WAN Links">
                                 <FieldGrid
                                     fields={fieldsIn("link")}
                                     {...sharedFieldProps}
@@ -210,7 +207,7 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                                 )}
                             </FormSection>
 
-                            <FormSection title="LAN and loopbacks">
+                            <FormSection title="LAN and Loopback Links">
                                 <FieldGrid
                                     fields={fieldsIn("network")}
                                     {...sharedFieldProps}

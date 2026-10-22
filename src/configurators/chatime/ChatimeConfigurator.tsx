@@ -10,7 +10,7 @@ import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { Toast } from "../../components/ui/Toast";
@@ -135,12 +135,9 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                         onBack={onBack}
                         width="wide"
                         actions={
-                            <Button
-                                icon={<RotateCcw className="h-4 w-4" />}
-                                onClick={handleReset}
-                            >
-                                Reset
-                            </Button>
+                            <IconButton label="Reset" onClick={handleReset}>
+                                <RotateCcw className="h-4 w-4" />
+                            </IconButton>
                         }
                     />
                 }
@@ -159,17 +156,17 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                                     variant="primary"
                                     accent="violet"
                                     size="lg"
-                                    className="w-full"
+                                    className="w-full uppercase"
                                     icon={<Terminal className="h-4 w-4" />}
                                     disabled={templateStatus !== "ready"}
                                 >
-                                    Generate config
+                                    Generate Configuration
                                 </Button>
                             }
                         >
                             <FormSection title="Device">
                                 <SegmentedControl
-                                    name="chatime-series"
+                                    id="chatime-series"
                                     label="Model"
                                     value={series}
                                     options={SERIES_OPTIONS}
@@ -187,21 +184,21 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                                 />
                             </FormSection>
 
-                            <FormSection title="AirFiber link">
+                            <FormSection title="AirFiber Link">
                                 <FieldGrid
                                     fields={fieldsIn("airfiber")}
                                     {...sharedFieldProps}
                                 />
                             </FormSection>
 
-                            <FormSection title="M2M link">
+                            <FormSection title="M2M Link">
                                 <FieldGrid
                                     fields={fieldsIn("m2m")}
                                     {...sharedFieldProps}
                                 />
                             </FormSection>
 
-                            <FormSection title="PTP, LAN and loopback">
+                            <FormSection title="PTP, LAN and Loopback">
                                 <FieldGrid
                                     fields={fieldsIn("network")}
                                     {...sharedFieldProps}

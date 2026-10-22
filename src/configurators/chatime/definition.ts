@@ -5,7 +5,7 @@
  *
  * A plain fill-in generator: the templates are complete and only values change.
  */
-import type { Replacements } from "../../lib/template";
+import type { Replacements } from "../../lib/placeholders";
 import { rules, type FieldDef } from "../../lib/validation";
 // Existing helper from the project.
 import { subtractOneFromIP } from "../../utils";
@@ -105,7 +105,7 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
     {
         key: "ip_tun_airfiber",
         group: "airfiber",
-        label: "AirFiber tunnel IP",
+        label: "AirFiber Tunnel IP",
         placeholder: "e.g. 192.168.217.127",
         required: true,
         rules: [rules.ipv4()],
@@ -121,7 +121,7 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
     {
         key: "ip_tun_m2m",
         group: "m2m",
-        label: "M2M tunnel IP",
+        label: "M2M Tunnel IP",
         placeholder: "e.g. 192.168.218.127",
         required: true,
         rules: [rules.ipv4()],
