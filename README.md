@@ -115,7 +115,8 @@ src/
 │   └── placeholder/          tictactoe.ts, useTicTacToe.ts, Board, PlaceholderApp
 │
 ├── configurators/            Configuration generators, one folder per vendor
-│   └── fortigate/            definition.ts, syntax.ts, FortigateConfigurator.tsx
+│   └── fortigate/            definition.ts (form), plan.ts (addresses), generate.ts, fortios.ts (config reader),
+│                             sections/ (uplinks, LAN, SD-WAN, tunnels), FortigateConfigurator.tsx
 │
 ├── components/               Shared UI, knows nothing about any specific tool
 │   ├── layout/               AppShell, AppHeader, PageFooter, PageTransition
@@ -230,29 +231,45 @@ A generator is a form that fills a text template. The vendor-specific parts are 
 
 ## The FortiGate generator
 
-Pick a model and firmware, choose single or dual link, fill in the parameters and generate. The output can be copied or downloaded as `<hostname>.conf`.
+Pick a model and firmware, choose single or dual link, the port and addressing (static or DHCP) of each link, fill in the parameters and generate. The output can be copied or downloaded as `<hostname>.conf`.
 
-**Template placeholders.** The generator replaces these in the template:
+**How a config is built.** The template is a full FortiOS config holding everything every site has in common. The generator only adds to it:
 
-| Placeholder                   | Value                                                                                          |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- |
-| `[HOSTNAME]`                  | Hostname                                                                                       |
-| `[SID_PRIMARY_LINK]`          | Main link SID                                                                                  |
-| `[SID_SECONDARY_LINK]`        | Secondary link SID (empty on single link)                                                      |
-| `[IP_PRIMARY_LINK]`           | Main link IP                                                                                   |
-| `[IP_GATEWAY_PRIMARY_LINK]`   | Main link IP minus one                                                                         |
-| `[IP_SECONDARY_LINK]`         | Secondary link IP, or `0.0.0.0` on single link                                                 |
-| `[IP_GATEWAY_SECONDARY_LINK]` | Secondary link IP minus one, or `0.0.0.0`                                                      |
-| `[IP_LAN]`                    | LAN network: first three octets of the LAN IP followed by `.0` (default LAN IP `192.168.1.99`) |
-| `[IP_LOOPBACK205]`            | Loopback 205 IP                                                                                |
+- **Placeholders** take values that appear as-is in many places:
 
-Replacement happens in a single pass, so a value can never be re-scanned as a placeholder. If the generated config still contains something shaped like `[NAME]`, a warning lists it. That usually means a template and `buildReplacements` have drifted apart.
+    | Placeholder        | Value           |
+    | ------------------ | --------------- |
+    | `[HOSTNAME]`       | Hostname        |
+    | `[IP_LOOPBACK205]` | Loopback 205 IP |
 
-**Validation.** Hostname, main link SID, main link IP and Loopback 205 IP are required; so are the secondary link fields on dual link. All IPs must be valid IPv4 addresses. A FortiOS hostname is limited to 35 characters of letters, digits, hyphens and underscores. The LAN IP is optional and falls back to the default.
+- **Code** adds what depends on the form (`src/configurators/fortigate/sections/`). The template leaves these places empty: bare ports, an empty `config members` under SD-WAN, an empty `config neighbor` under BGP.
+
+    | Part               | What is added                                                                                                                       |
+    | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+    | Uplink ports       | Address or `mode dhcp`, `allowaccess ping snmp`, the SID as alias, `role wan`. A LAN port used as an uplink leaves the hardware switch. |
+    | SD-WAN members     | One per uplink in the template's zone, with the gateway on static links, numbered after any members the template has               |
+    | Management tunnels | `SPOKE-MGMT-OV-1`/`-2` on the uplink ports, their IPsec phases, the `MGMT-LOOPBACK` policy, and a BGP neighbor to the hub per tunnel |
+    | LAN                | The LAN's values in the places that name its subnet: the `lan` address, its DHCP server (gateway, netmask, range) and the `lan` firewall address |
+
+  The generator refuses rather than overwrites: a port the template already gave an address, alias or role, or one that already has an SD-WAN member, stops generation with a message. So does a placeholder it doesn't know.
+
+**Addresses** (`src/configurators/fortigate/plan.ts`)
+
+- **Links:** any address of the subnet may be typed, the network address included. The provider's router is the first usable address and the FortiGate the next: `36.37.73.96/30` gives `.97` and `.98`. On a `/31` the provider takes the first address and the FortiGate the second.
+- **LAN:** the typed address is the FortiGate's (a network address becomes the first usable one). DHCP hands out `.110` to `.210`, as in the sample configs, when that fits and doesn't include the FortiGate. Otherwise it uses every usable address on the larger side of the FortiGate's.
+
+**Validation.** Hostname, main link SID, Loopback 205 IP and, on a static link, its IP are required; so are the secondary link fields on dual link. A FortiOS hostname is limited to 35 characters of letters, digits, hyphens and underscores. A link needs a `/31` or larger subnet, the LAN a `/30` or larger. The LAN IP is optional and falls back to `192.168.1.99/24`.
+
+**Checking it.** After changing the generator or a template, run:
+
+```bash
+npx tsx scripts/verify-fortigate.ts
+```
+
+It generates every template in every combination (single and dual link, static and DHCP, uplinks on their usual ports and on LAN ports) and checks each config: what FortiOS needs is there, and everything outside the parts above matches the template line for line.
 
 **Good to know**
 
-- The SD-WAN toggle is forced on when dual link is on. It is not used to build the output yet.
 - The preview shows whether it still matches the form. Change a field after generating and it is marked as outdated.
 - Templates are cached per session. If a template file is missing, the form shows an error with a Retry button.
 

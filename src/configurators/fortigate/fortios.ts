@@ -181,10 +181,6 @@ export const unquote = (token: string): string =>
         ? token.slice(1, -1)
         : token;
 
-/** Splits a value into tokens, keeping quoted strings together: `"a b" c` gives two. */
-export const tokens = (value: string): string[] =>
-    value.match(/"[^"]*"|\S+/g) ?? [];
-
 /** Everything after the key: `set ip 1.2.3.4 255.255.255.0` gives `1.2.3.4 255.255.255.0`. */
 export const valueOf = (node: SetNode): string =>
     node.text.replace(/^\S+\s+\S+\s*/, "");
@@ -205,34 +201,6 @@ export function findEdit(
     return parent.children
         .filter(isEdit)
         .find((node) => editName(node) === name);
-}
-
-/**
- * Visits every node below `container`. `path` holds the containers from the
- * document down to the node's parent, so the last entry is the parent itself.
- * Safe to remove the visited node from its parent while visiting.
- */
-export function walk(
-    container: Container,
-    visit: (node: Node, path: readonly Container[]) => void,
-    path: readonly Container[] = [container],
-): void {
-    for (const node of [...container.children]) {
-        visit(node, path);
-        if (node.kind === "config" || node.kind === "edit")
-            walk(node, visit, [...path, node]);
-    }
-}
-
-/** Name of the closest `config ...` block around a node, e.g. `members` or `router static`. */
-export function enclosingConfig(
-    path: readonly Container[],
-): string | undefined {
-    for (let i = path.length - 1; i >= 0; i--) {
-        const container = path[i];
-        if (container.kind === "config") return container.name;
-    }
-    return undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -263,20 +231,30 @@ export const newConfig = (name: string): ConfigNode => ({
 });
 
 /** Rewrites a statement's value; it gets re-indented on output. */
-export function setValue(node: SetNode, value: string): void {
+function setValue(node: SetNode, value: string): void {
     node.text = `${node.verb} ${node.key} ${value}`;
     delete node.raw;
-}
-
-/** Removes and returns the first `set <key>` in a block. */
-export function takeSet(parent: Container, key: string): SetNode | undefined {
-    const index = parent.children.findIndex((node) => isSet(node, key));
-    return index === -1
-        ? undefined
-        : (parent.children.splice(index, 1)[0] as SetNode);
 }
 
 export function removeNode(parent: Container, node: Node): void {
     const index = parent.children.indexOf(node);
     if (index !== -1) parent.children.splice(index, 1);
+}
+
+/** The value of the first `set <key>` in a block, unquoted. */
+export function readSet(parent: Container, key: string): string | undefined {
+    const node = parent.children.find((child): child is SetNode => isSet(child, key));
+    return node ? unquote(valueOf(node)) : undefined;
+}
+
+/** Replaces the value of `set <key>` in place, or appends the line when the block has none. */
+export function upsertSet(parent: Container, key: string, value: string): void {
+    const node = parent.children.find((child): child is SetNode => isSet(child, key));
+    if (node) setValue(node, value);
+    else parent.children.push(newSet(key, value));
+}
+
+/** The first `edit` in a section whose `set <key>` reads `value` (quotes ignored). */
+export function findEditBy(parent: Container, key: string, value: string): EditNode | undefined {
+    return parent.children.filter(isEdit).find((edit) => readSet(edit, key) === value);
 }

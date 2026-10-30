@@ -17,11 +17,6 @@ export interface Subnet {
     broadcast: string;
     firstUsable: string;
     lastUsable: string;
-    wanHost: string;
-    wanGateway: string;
-    dhcpStart: string;
-    dhcpEnd: string;
-    usableHosts: number;
 }
 
 /** No leading zeros, so "/030" and "/08" are rejected instead of guessed at. */
@@ -65,7 +60,6 @@ export function getSubnet(input: string | Cidr): Subnet | null {
     const network = (ipToInt(cidr.ip) & mask) >>> 0;
     const broadcast = (network | (~mask >>> 0)) >>> 0;
 
-    const size = 2 ** (32 - cidr.prefix);
     const pointToPoint = cidr.prefix >= 31;
 
     return {
@@ -76,11 +70,6 @@ export function getSubnet(input: string | Cidr): Subnet | null {
         broadcast: intToIp(broadcast),
         firstUsable: intToIp(pointToPoint ? network : network + 1),
         lastUsable: intToIp(pointToPoint ? broadcast : broadcast - 1),
-        wanHost: intToIp(pointToPoint ? network : network + 2),
-        wanGateway: intToIp(pointToPoint ? network : network + 1),
-        dhcpStart: intToIp(pointToPoint ? network + 1 : network + 2),
-        dhcpEnd: intToIp(pointToPoint ? broadcast - 1 : broadcast - 1),
-        usableHosts: pointToPoint ? size : size - 2,
     };
 }
 
@@ -92,17 +81,5 @@ export function isUsableHost(subnet: Subnet): boolean {
     );
 }
 
-/* Single-value shortcuts. Each returns null when the input isn't valid CIDR. */
-
 export const getNetworkAddress = (cidr: string | Cidr) =>
     getSubnet(cidr)?.network ?? null;
-export const getFirstUsableIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.firstUsable ?? null;
-export const getWanHostIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.wanHost ?? null;
-export const getWanGatewayIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.wanGateway ?? null;
-export const getDhcpStartIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.dhcpStart ?? null;
-export const getDhcpEndIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.dhcpEnd ?? null;
