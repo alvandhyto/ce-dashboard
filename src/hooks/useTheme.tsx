@@ -8,7 +8,10 @@ import {
     type ReactNode,
 } from "react";
 
+/** index.html applies the saved theme before the bundle loads; it uses the same key and colours. */
 const STORAGE_KEY = "theme";
+/** The page background (index.css), for the browser's address bar and title bar. */
+const THEME_COLOR = { light: "#F8FAFC", dark: "#0F1218" };
 
 interface ThemeContextValue {
     isDarkMode: boolean;
@@ -32,10 +35,12 @@ function readInitialTheme(): boolean {
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [isDarkMode, setIsDarkMode] = useState(readInitialTheme);
 
-    // Layout effect: apply the class before the first paint, so dark-mode users
-    // don't see a flash of the light theme on load.
+    // Layout effect, so a toggle repaints once rather than light-then-dark.
     useLayoutEffect(() => {
         document.documentElement.classList.toggle("dark", isDarkMode);
+        document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", isDarkMode ? THEME_COLOR.dark : THEME_COLOR.light);
         try {
             window.localStorage.setItem(STORAGE_KEY, isDarkMode ? "dark" : "light");
         } catch {

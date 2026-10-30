@@ -1,5 +1,6 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
+import { useEffect } from "react";
 import { cn } from "../../lib/cn";
 import type { ToastKind, ToastMessage } from "../../hooks/useToast";
 
@@ -27,11 +28,22 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     const reduceMotion = useReducedMotion();
     const tone = toast ? STYLES[toast.kind] : null;
 
+    // Escape closes it from anywhere, since warnings stay up until dismissed.
+    const visible = toast !== null;
+    useEffect(() => {
+        if (!visible) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") onDismiss();
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [visible, onDismiss]);
+
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
             <AnimatePresence>
                 {toast && tone ? (
-                    <motion.div
+                    <m.div
                         key={toast.id}
                         role={toast.kind === "error" ? "alert" : "status"}
                         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
@@ -49,11 +61,12 @@ export function Toast({ toast, onDismiss }: ToastProps) {
                             type="button"
                             onClick={onDismiss}
                             aria-label="Dismiss"
+                            title="Dismiss (Esc)"
                             className="-mr-1 shrink-0 cursor-pointer rounded p-0.5 opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
                         >
                             <X className="h-4 w-4" />
                         </button>
-                    </motion.div>
+                    </m.div>
                 ) : null}
             </AnimatePresence>
         </div>

@@ -9,6 +9,8 @@ import { runTest } from "./runTest";
 export function useSpeedtest() {
     const [view, setView] = useState<SpeedtestView>(IDLE_VIEW);
     const [warning, setWarning] = useState<string | null>(null);
+    /** When the last test's exact figures came in; null before that, and while a test runs. */
+    const [finishedAt, setFinishedAt] = useState<Date | null>(null);
     /** Cancels the running test; null when none is running. */
     const cancelRef = useRef<(() => void) | null>(null);
 
@@ -23,6 +25,7 @@ export function useSpeedtest() {
         if (cancelRef.current) return;
         setView(STARTING_VIEW);
         setWarning(null);
+        setFinishedAt(null);
         cancelRef.current = runTest({
             onView: setView,
             onFail: (message) => {
@@ -32,6 +35,7 @@ export function useSpeedtest() {
             },
             onFinish: () => {
                 cancelRef.current = null;
+                setFinishedAt(new Date());
             },
         });
     }, []);
@@ -46,6 +50,7 @@ export function useSpeedtest() {
         running: isRunning(view.stage),
         /** Set when a test could not run or was stopped, so a 0 isn't mistaken for a result. */
         warning,
+        finishedAt,
         start,
         abort,
     };

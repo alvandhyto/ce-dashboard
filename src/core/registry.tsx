@@ -135,6 +135,29 @@ const GENERATORS_ROUTE: Route = { name: "generators" };
 export const parentRoute = (section: Section): Route =>
     section === "generators" ? GENERATORS_ROUTE : DASHBOARD_ROUTE;
 
+/** The URL hash for a route: "" for the dashboard, "#/generators", "#/<appId>". */
+export function routeToHash(route: Route): string {
+    if (route.name === "dashboard") return "";
+    return route.name === "generators" ? "#/generators" : `#/${route.appId}`;
+}
+
+/** The route a URL hash points to. Anything unknown is the dashboard. */
+export function routeFromHash(hash: string): Route {
+    const path = hash.replace(/^#\/?/, "");
+    if (path === "generators") return GENERATORS_ROUTE;
+    if (Object.hasOwn(APPS, path)) return { name: "app", appId: path as AppId };
+    return DASHBOARD_ROUTE;
+}
+
+const SITE_TITLE = "Dashboard Delivery";
+
+/** The browser tab title for a route. */
+export function routeTitle(route: Route): string {
+    if (route.name === "dashboard") return SITE_TITLE;
+    const page = route.name === "generators" ? GENERATORS_LAUNCHER.title : APPS[route.appId].title;
+    return `${page} · ${SITE_TITLE}`;
+}
+
 /** True for the generator menu and every app in the "generators" section. */
 export function isProtectedRoute(route: Route): boolean {
     if (route.name === "generators") return true;

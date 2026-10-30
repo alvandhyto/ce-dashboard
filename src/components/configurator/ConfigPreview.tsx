@@ -36,26 +36,44 @@ const STATE_META: Record<PreviewState, { dot: string; label: string }> = {
 
 const plainClassifier = (): LineKind => "plain";
 
-const ConfigLine = memo(function ConfigLine({
-    number,
-    text,
-    kind,
-}: {
-    number: number;
+/** Lines per block. Blocks the reader can't see skip layout and paint (content-visibility). */
+const BLOCK_LINES = 200;
+/** Must match leading-6 on the preview body: it sizes the blocks that haven't been laid out. */
+const LINE_HEIGHT_PX = 24;
+
+interface Line {
     text: string;
     kind: LineKind;
-}) {
+}
+
+/**
+ * A run of lines, drawn as one element per line. Line numbers come from a CSS counter, so
+ * they cost no elements and are left out when the text is selected or copied. Every block
+ * restarts the counter at its own first line: content-visibility scopes counters to the block.
+ */
+const ConfigBlock = memo(function ConfigBlock({ start, lines }: { start: number; lines: readonly Line[] }) {
     return (
-        <div className="flex px-2 hover:bg-slate-100/70 dark:hover:bg-white/5">
-            <span
-                aria-hidden
-                className="w-12 shrink-0 select-none pr-4 text-right text-slate-400 dark:text-slate-600"
-            >
-                {number}
-            </span>
-            <span className={cn("whitespace-pre", KIND_CLASS[kind])}>
-                {text}
-            </span>
+        <div
+            style={{
+                contentVisibility: "auto",
+                containIntrinsicHeight: `auto ${lines.length * LINE_HEIGHT_PX}px`,
+            }}
+        >
+            {/* The reset sits inside the contained element: on the element itself, Chrome ignores its start value. */}
+            <div style={{ counterReset: `line ${start}` }}>
+                {lines.map((line, index) => (
+                    <div
+                        key={index}
+                        className={cn(
+                            "whitespace-pre px-2 [counter-increment:line] hover:bg-slate-100/70 dark:hover:bg-white/5",
+                            "before:inline-block before:w-12 before:select-none before:pr-4 before:text-right before:font-normal before:not-italic before:text-slate-400 before:content-[counter(line)] dark:before:text-slate-600",
+                            KIND_CLASS[line.kind],
+                        )}
+                    >
+                        {line.text}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 });
@@ -89,12 +107,21 @@ export const ConfigPreview = memo(function ConfigPreview({
 }: ConfigPreviewProps) {
     const { status: copyStatus, copy } = useCopyToClipboard();
 
-    const lines = useMemo(() => {
+    // Split and classify once per output, not on every render.
+    const lines = useMemo((): Line[] => {
         if (!content) return [];
         const split = content.split(/\r?\n/);
         if (split[split.length - 1] === "") split.pop();
-        return split;
-    }, [content]);
+        return split.map((text) => ({ text, kind: classifyLine(text) }));
+    }, [content, classifyLine]);
+
+    const blocks = useMemo(() => {
+        const result: { start: number; lines: Line[] }[] = [];
+        for (let start = 0; start < lines.length; start += BLOCK_LINES) {
+            result.push({ start, lines: lines.slice(start, start + BLOCK_LINES) });
+        }
+        return result;
+    }, [lines]);
 
     const sizeLabel = useMemo(
         () =>
@@ -183,13 +210,8 @@ export const ConfigPreview = memo(function ConfigPreview({
                     className="h-full overflow-auto py-3 font-mono text-[13px] leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400/50"
                 >
                     <div className="min-w-max">
-                        {lines.map((line, index) => (
-                            <ConfigLine
-                                key={index}
-                                number={index + 1}
-                                text={line}
-                                kind={classifyLine(line)}
-                            />
+                        {blocks.map((block) => (
+                            <ConfigBlock key={block.start} start={block.start} lines={block.lines} />
                         ))}
                     </div>
                 </div>

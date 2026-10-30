@@ -8,7 +8,8 @@ export function downloadTextFile(content: string, filename: string): void {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Revoking in the same tick can cancel the download in some browsers (Safari, older Firefox).
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export interface TextFile {
