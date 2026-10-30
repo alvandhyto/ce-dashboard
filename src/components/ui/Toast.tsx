@@ -30,7 +30,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
             <AnimatePresence>
-                {toast && tone && (
+                {toast && tone ? (
                     <motion.div
                         key={toast.id}
                         role={toast.kind === "error" ? "alert" : "status"}
@@ -54,7 +54,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
                             <X className="h-4 w-4" />
                         </button>
                     </motion.div>
-                )}
+                ) : null}
             </AnimatePresence>
         </div>
     );

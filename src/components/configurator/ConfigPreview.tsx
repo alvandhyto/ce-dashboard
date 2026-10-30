@@ -109,7 +109,7 @@ export const ConfigPreview = memo(function ConfigPreview({
     const actions = (
         <>
             {extraActions}
-            {content && (
+            {content ? (
                 <>
                     <Button
                         size="sm"
@@ -136,7 +136,7 @@ export const ConfigPreview = memo(function ConfigPreview({
                         Download
                     </Button>
                 </>
-            )}
+            ) : null}
         </>
     );
 
@@ -166,12 +166,12 @@ export const ConfigPreview = memo(function ConfigPreview({
                         />
                         <span className="truncate">{meta.label}</span>
                     </span>
-                    {content && (
+                    {content ? (
                         <span className="flex shrink-0 gap-4 font-mono">
                             <span>{lines.length} lines</span>
                             <span>{sizeLabel}</span>
                         </span>
-                    )}
+                    ) : null}
                 </div>
             }
         >

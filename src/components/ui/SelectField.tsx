@@ -3,9 +3,10 @@ import { ChevronDown } from "lucide-react";
 interface SelectFieldProps<T extends string> {
     id: string;
     label: string;
-    value: T;
+    /** T is read from `options` alone, so a state setter like setSeries fits onChange. */
+    value: NoInfer<T>;
     options: ReadonlyArray<{ value: T; label: string }>;
-    onChange: (value: T) => void;
+    onChange: (value: NoInfer<T>) => void;
 }
 
 /** Native <select>: keyboard, screen-reader and mobile behaviour come for free. */

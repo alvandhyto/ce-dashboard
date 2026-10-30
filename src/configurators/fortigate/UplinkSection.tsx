@@ -84,11 +84,11 @@ export function UplinkSection({
                 onChange={onChange}
             />
 
-            {uplink.dhcp && (
+            {uplink.dhcp ? (
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                     The address and gateway come from DHCP, so no IP is needed.
                 </p>
-            )}
+            ) : null}
         </FormSection>
     );
 }

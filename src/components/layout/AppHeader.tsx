@@ -36,21 +36,21 @@ export function AppHeader({
                 )}
             >
                 <div className="flex min-w-0 items-center gap-3">
-                    {onBack && (
+                    {onBack ? (
                         <IconButton label="Back" onClick={onBack}>
                             <ArrowLeft className="h-4 w-4" />
                         </IconButton>
-                    )}
+                    ) : null}
                     {icon}
                     <div className="min-w-0">
                         <h1 className="truncate text-base font-bold leading-tight text-slate-900 dark:text-slate-100 uppercase tracking-tight">
                             {title}
                         </h1>
-                        {subtitle && (
+                        {subtitle ? (
                             <p className="truncate text-xs text-slate-500 dark:text-slate-400 uppercase tracking-tighter">
                                 {subtitle}
                             </p>
-                        )}
+                        ) : null}
                     </div>
                 </div>
 

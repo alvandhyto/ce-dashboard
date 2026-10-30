@@ -1,5 +1,5 @@
 import { AnimatePresence } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 
 import {
     APPS,
@@ -72,10 +72,13 @@ function Router() {
                 const AppComponent = app.component;
                 return {
                     key: `app:${app.id}`,
+                    // Apps load on demand; the blank moment before the first one arrives is brief.
                     node: (
-                        <AppComponent
-                            onBack={() => setRoute(parentRoute(app.section))}
-                        />
+                        <Suspense fallback={null}>
+                            <AppComponent
+                                onBack={() => setRoute(parentRoute(app.section))}
+                            />
+                        </Suspense>
                     ),
                 };
             }

@@ -1,5 +1,4 @@
-import { getSubnet, isUsableHost, parseCidr } from "./cidr";
-import { isValidIPv4 } from "./ip";
+import { getSubnet, isUsableHost, isValidIPv4, parseCidr } from "./cidr";
 
 /** Returns an error message, or null when the value is acceptable. Never receives an empty value. */
 export type Rule = (value: string) => string | null;

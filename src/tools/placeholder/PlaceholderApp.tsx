@@ -70,7 +70,7 @@ export default function PlaceholderApp({ onBack }: AppProps) {
                     >
                         {statusText(phase, canPlay, outcome)}
                     </p>
-                    {phase !== "playing" && (
+                    {phase !== "playing" ? (
                         <Button
                             variant="primary"
                             accent="amber"
@@ -80,7 +80,7 @@ export default function PlaceholderApp({ onBack }: AppProps) {
                         >
                             {phase === "over" ? "PLAY AGAIN" : "START GAME"}
                         </Button>
-                    )}
+                    ) : null}
                 </div>
             </main>
         </AppShell>

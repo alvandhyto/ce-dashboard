@@ -4,7 +4,6 @@
  * config (sections/) only copies values and never derives them.
  */
 import { getSubnet, type Subnet } from "../../lib/cidr";
-import { intToIp, ipToInt } from "../../lib/ip";
 import { DEFAULT_LAN_CIDR, type FortigateOptions, type FortigateValues, type UplinkRole } from "./definition";
 
 export type Addressing =
@@ -44,12 +43,12 @@ export interface SitePlan {
 export function linkAddressing(cidr: string): Addressing & { kind: "static" } {
     const subnet = requireSubnet(cidr, "link");
     if (subnet.prefix > 31) throw new Error(`${cidr} is a single address; a link needs a /31 or larger subnet.`);
-    const network = ipToInt(subnet.network);
     return {
         kind: "static",
-        ip: intToIp(network + (subnet.prefix === 31 ? 1 : 2)),
+        // The usable address after the gateway: the last of a /31, the third of anything larger.
+        ip: subnet.prefix === 31 ? subnet.lastUsable : subnet.at(2)!,
         netmask: subnet.netmask,
-        gateway: intToIp(network + (subnet.prefix === 31 ? 0 : 1)),
+        gateway: subnet.firstUsable,
     };
 }
 
@@ -65,17 +64,16 @@ export function lanPlan(cidr: string): LanPlan {
     const subnet = requireSubnet(cidr, "LAN");
     if (subnet.prefix > 30) throw new Error(`${cidr} leaves no room for DHCP clients; the LAN needs a /30 or larger subnet.`);
 
-    const network = ipToInt(subnet.network);
-    const first = ipToInt(subnet.firstUsable);
-    const last = ipToInt(subnet.lastUsable);
-    const typed = ipToInt(subnet.ip);
-    const ip = typed >= first && typed <= last ? typed : first;
+    // Positions in the block (see Subnet.at). A /30 or larger LAN leaves out only the
+    // network address (0) and the broadcast address (size - 1).
+    const first = 1;
+    const last = subnet.size - 2;
+    const ip = subnet.index >= first && subnet.index <= last ? subnet.index : first;
 
     let start: number;
     let end: number;
-    const conventional = { start: network + DHCP_RANGE.first, end: network + DHCP_RANGE.last };
-    if (conventional.end <= last && (ip < conventional.start || ip > conventional.end)) {
-        ({ start, end } = conventional);
+    if (DHCP_RANGE.last <= last && (ip < DHCP_RANGE.first || ip > DHCP_RANGE.last)) {
+        [start, end] = [DHCP_RANGE.first, DHCP_RANGE.last];
     } else if (last - ip >= ip - first) {
         [start, end] = [ip + 1, last];
     } else {
@@ -83,11 +81,11 @@ export function lanPlan(cidr: string): LanPlan {
     }
 
     return {
-        ip: intToIp(ip),
+        ip: subnet.at(ip)!,
         netmask: subnet.netmask,
         network: subnet.network,
-        dhcpStart: intToIp(start),
-        dhcpEnd: intToIp(end),
+        dhcpStart: subnet.at(start)!,
+        dhcpEnd: subnet.at(end)!,
     };
 }
 

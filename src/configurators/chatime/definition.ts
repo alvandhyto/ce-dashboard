@@ -5,16 +5,9 @@
  *
  * A plain fill-in generator: the templates are complete and only values change.
  */
-import {
-    getNetworkAddress,
-    getSubnet,
-    parseCidr,
-    type Subnet,
-} from "../../lib/cidr";
+import { getSubnet } from "../../lib/cidr";
 import type { Replacements } from "../../lib/placeholders";
 import { rules, type FieldDef } from "../../lib/validation";
-// Existing helper from the project.
-import { subtractOneFromIP } from "../../lib/ip";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */
@@ -77,14 +70,6 @@ export const INITIAL_VALUES: ChatimeValues = {
     loopback205: "",
 };
 
-/**
- * Address with prefix length, e.g. 123.231.211.162/30. Any address inside the
- * subnet is accepted, including its network and broadcast address, because
- * the template decides which one to use. Pass `requireHost: true` to
- * rules.cidr to reject those two again.
- */
-const ipWithPrefix = (example: string) => rules.cidr({ example });
-
 /** SIDs go into the config unquoted, so no spaces or quotes. */
 const sidRules = [
     rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
@@ -144,9 +129,10 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
         key: "ip_ptp",
         group: "network",
         label: "PTP IP",
-        placeholder: "e.g. 192.168.205.136/30",
+        placeholder: "e.g. 192.168.205.137/30",
         required: true,
-        rules: [ipWithPrefix("192.168.205.136/30")],
+        // The template writes the PTP mask as 255.255.255.252, and the address goes on an interface.
+        rules: [rules.cidr({ prefix: 30, requireHost: true, example: "192.168.205.137/30" })],
     },
     {
         key: "ip_lan",
@@ -154,7 +140,8 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
         label: "LAN IP",
         placeholder: "e.g. 172.19.31.208/28",
         required: true,
-        rules: [ipWithPrefix("172.19.31.208/28")],
+        // The template writes the LAN mask as 255.255.255.240.
+        rules: [rules.cidr({ prefix: 28, example: "172.19.31.208/28" })],
     },
     {
         key: "loopback205",
@@ -174,19 +161,23 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
 /**
  * Maps template placeholders to values. Expects trimmed, validated input.
  *
- * [IP_NETWORK_PTP] is the PTP address minus one. [IP_LAN] is written into the
- * template exactly as entered.
+ * The PTP and LAN fields carry a prefix length; the template wants the address
+ * alone (the masks are written in it). [IP_PTP] is the PTP address as typed,
+ * [IP_NETWORK_PTP] its network, and [IP_LAN] the LAN's network, used for the
+ * BGP prefixes.
  */
 export function buildReplacements(values: ChatimeValues): Replacements {
+    const ptp = getSubnet(values.ip_ptp);
+    const lan = getSubnet(values.ip_lan);
     return {
         "[HOSTNAME]": values.hostname,
         "[SID_M2M]": values.sid_m2m,
         "[SID_AIRFIBER]": values.sid_airfiber,
         "[IP_TUN_M2M]": values.ip_tun_m2m,
         "[IP_TUN_AIRFIBER]": values.ip_tun_airfiber,
-        "[IP_NETWORK_PTP]": subtractOneFromIP(values.ip_ptp),
-        "[IP_PTP]": values.ip_ptp,
-        "[IP_LAN]": values.ip_lan,
+        "[IP_NETWORK_PTP]": ptp?.network ?? "",
+        "[IP_PTP]": ptp?.ip ?? "",
+        "[IP_LAN]": lan?.network ?? "",
         "[IP_LOOPBACK205]": values.loopback205,
     };
 }

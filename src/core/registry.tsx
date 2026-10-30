@@ -4,20 +4,15 @@
  * To add an app: build it under tools/ or configurators/, add its id to AppId in
  * types.ts, then add one entry to APPS below. The dashboard, the generator menu,
  * navigation and the access gate all read from here.
+ *
+ * Each app is its own chunk, downloaded when it is first opened (or when its card is
+ * hovered or focused, so it is usually there by the click). The dashboard doesn't carry them.
  */
 import { Folder, Gauge, Terminal } from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
-
-import PlaceholderApp from "../tools/placeholder";
-import SpeedtestApp from "../tools/speedtest";
-import FortigateConfigurator from "../configurators/fortigate";
-import KfcConfigurator from "../configurators/kfc";
-import ChatimeConfigurator from "../configurators/chatime";
+import { lazy, type ComponentType, type ReactNode } from "react";
 
 import type { Accent } from "../lib/accent";
 import type { AppId, AppProps, Route, Section } from "./types";
-import { title } from "process";
-import { desc } from "motion/react-client";
 
 export interface AppDefinition {
     id: AppId;
@@ -27,6 +22,8 @@ export interface AppDefinition {
     accent: Accent;
     section: Section;
     component: ComponentType<AppProps>;
+    /** Starts downloading the app's chunk. Safe to call any number of times. */
+    preload: () => void;
 }
 
 /** What a dashboard or menu card links to. */
@@ -38,6 +35,12 @@ export interface Launcher {
     accent: Accent;
     route: Route;
     restricted?: boolean;
+    preload?: () => void;
+}
+
+/** An app loaded on demand. The browser fetches a module once, so preloading twice costs nothing. */
+function onDemand(load: () => Promise<{ default: ComponentType<AppProps> }>) {
+    return { component: lazy(load), preload: () => void load() };
 }
 
 export const APPS: Record<AppId, AppDefinition> = {
@@ -49,7 +52,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         icon: <Gauge className="h-5 w-5" />,
         accent: "blue",
         section: "main",
-        component: SpeedtestApp,
+        ...onDemand(() => import("../tools/speedtest/SpeedtestApp")),
     },
     placeholder: {
         id: "placeholder",
@@ -59,7 +62,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         icon: <Folder className="h-5 w-5" />,
         accent: "amber",
         section: "main",
-        component: PlaceholderApp,
+        ...onDemand(() => import("../tools/placeholder/PlaceholderApp")),
     },
     fortigate: {
         id: "fortigate",
@@ -68,7 +71,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         icon: <img src="/icons/fortilogo.ico" alt="" className="h-6 w-6" />,
         accent: "rose",
         section: "generators",
-        component: FortigateConfigurator,
+        ...onDemand(() => import("../configurators/fortigate/FortigateConfigurator")),
     },
     kfc: {
         id: "kfc",
@@ -78,7 +81,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         icon: <img src="/icons/kfclogo.png" alt="" className="h-6 w-6" />,
         accent: "rose",
         section: "generators",
-        component: KfcConfigurator,
+        ...onDemand(() => import("../configurators/kfc/KfcConfigurator")),
     },
     chatime: {
         id: "chatime",
@@ -88,7 +91,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         icon: <img src="/icons/chatimelogo.png" alt="" className="h-6 w-6" />,
         accent: "violet",
         section: "generators",
-        component: ChatimeConfigurator,
+        ...onDemand(() => import("../configurators/chatime/ChatimeConfigurator")),
     },
 };
 
@@ -99,6 +102,7 @@ const launcherFor = (app: AppDefinition): Launcher => ({
     icon: app.icon,
     accent: app.accent,
     route: { name: "app", appId: app.id },
+    preload: app.preload,
 });
 
 /** Card that opens the generator menu (which sits behind the access gate). */

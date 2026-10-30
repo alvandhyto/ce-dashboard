@@ -38,7 +38,7 @@ export function Board({ board, interactive, onPlay }: BoardProps) {
                                 : "cursor-default",
                         )}
                     >
-                        {cell && (
+                        {cell ? (
                             <motion.span
                                 initial={reduceMotion ? false : { scale: 0.6, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
@@ -51,7 +51,7 @@ export function Board({ board, interactive, onPlay }: BoardProps) {
                                     <Circle className="h-10 w-10" strokeWidth={2.5} />
                                 )}
                             </motion.span>
-                        )}
+                        ) : null}
                     </button>
                 );
             })}

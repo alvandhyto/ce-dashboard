@@ -42,7 +42,7 @@ async function startServer() {
         );
         app.use(express.static(distPath, { index: false }));
         // index.html names the current build's files, so it is checked again on every load.
-        app.get("/{*splat}", (req, res) => {
+        app.get("/{*splat}", (_req, res) => {
             res.set("Cache-Control", "no-cache");
             res.sendFile(path.join(distPath, "index.html"));
         });
