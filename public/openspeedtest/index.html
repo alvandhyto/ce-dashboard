@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OpenSpeedTest engine</title>
+</head>
+<body>
+
+<!--
+    This page is the measuring engine of the Speedtest tool. It is never shown: the app
+    loads it in an invisible frame (src/tools/speedtest/engineFrame.ts), presses its Start
+    button and reads the numbers it writes, then draws them in its own interface.
+
+    app-2.5.4.js is OpenSpeedTest's script (https://github.com/openspeedtest/Speed-Test,
+    MIT license), untouched. It writes its results into elements it finds by ID, so the
+    markup below only has to provide those IDs.
+-->
+
+<script id="ost-config">
+    var openSpeedTestServerList = [{"ServerName": "Home", "Download": "downloading", "Upload": "upload", "ServerIcon": "DefaultIcon"}];
+    var openChannel = "dev";          // no calls to openspeedtest.com
+    var saveData = false;             // nothing is sent anywhere
+    var saveDataURL = "";
+    var pingSamples = 10;
+    var jitterFinalSample = 0.5;
+    var pingTimeOut = 5000;
+    var pingMethod = "GET";
+    var pingFile = "Upload";          // pings use the upload file
+    var ulDataSize = 30;              // MB per upload request
+    var ulDelay = 300;                // OpenSpeedTest: "Don't touch it"
+    var dlDelay = 300;
+    var upAdjust = 1.04;
+    var dlAdjust = 1.04;
+    var enableClean = false;          // default true. ?clean= would remove the overhead compensation
+    var dlDuration = 12;
+    var ulDuration = 12;
+    var dlThreads = 6;
+    var ulThreads = 6;
+    var enableRun = true;             // OpenSpeedTest default. The app starts the test by clicking its button instead
+    var setPingSamples = false;       // default true. ?ping=
+    var setPingTimeout = false;       // default true. ?timeout=
+    var setHTTPReq = false;           // default true. ?xhr=
+    var stressTest = false;           // default true. ?stress=
+    var selectTest = false;           // default true. ?test=
+    var selectServer = false;         // default true. ?host= would point the test at any server
+    function ostOnload() {}           // OpenSpeedTest calls this once the page is ready
+</script>
+
+<div id="loading_app"></div>
+
+<main id="OpenSpeedtest">
+    <section id="intro-Desk"><button id="startButtonDesk" type="button">Start</button></section>
+
+    <section id="UI-Desk">
+        <svg viewBox="0 0 240 240">
+            <path id="mainGaugebg-Desk" d="M0 0"/>
+            <path id="mainGaugeBlue-Desk" d="M0 0"/>
+            <path id="mainGaugeWhite-Desk" d="M0 0"/>
+            <circle id="progressStatus-Desk" r="1"/>
+            <text id="oDoTopSpeed"></text>
+            <text id="oDoLiveSpeed">0</text>
+            <g id="graphc1"></g>
+            <g id="graphc2"></g>
+        </svg>
+        <span id="oDoLiveStatus"></span>
+        <span id="downSymbolDesk"></span>
+        <span id="upSymbolDesk"></span>
+        <p id="ConnectErrorDesk" style="display: none">Connection error</p>
+        <span id="downResult">-</span>
+        <span id="upRestxt">-</span>
+        <span id="pingResult">-</span>
+        <span id="jitterDesk">-</span>
+    </section>
+
+    <!-- The script also looks up elements for a separate phone layout. -->
+    <section id="intro-Mob"><button id="startButtonMob" type="button">Start</button></section>
+    <section id="UI-Mob">
+        <svg viewBox="0 0 240 240">
+            <path id="mainGaugebg-Mob" d="M0 0"/>
+            <path id="mainGaugeBlue-Mob" d="M0 0"/>
+            <path id="mainGaugeWhite-Mob" d="M0 0"/>
+            <circle id="progressStatus-Mob" r="1"/>
+            <g id="graphMob1"></g>
+            <g id="graphMob2"></g>
+        </svg>
+        <span id="downSymbolMob"></span>
+        <span id="upSymbolMob"></span>
+        <span id="pingMobres"></span>
+        <span id="JitterResultMon"></span>
+        <span id="JitterResultms"></span>
+        <p id="ConnectErrorMob"></p>
+    </section>
+    <button id="settingsDesk" type="button">Settings</button>
+    <button id="settingsMob" type="button">Settings</button>
+    <div id="ipDesk"><span id="YourIP"></span></div>
+    <div id="ipMob"></div>
+    <span id="text"></span>
+    <a id="resultsData"></a>
+</main>
+
+<script src="app-2.5.4.js"></script>
+<script id="ost-start">
+    // Glue. OpenSpeedTest's own page swaps an <object> holding its SVG into the document
+    // in window.onload and then makes these two calls. This page has no such object, so
+    // it makes the two calls itself.
+    (function () {
+        if (!window.OpenSpeedTest || typeof window.OpenSpeedTest.Start !== "function") return;
+        window.onload = function () {
+            ostOnload();
+            OpenSpeedTest.Start();
+        };
+    })();
+</script>
+</body>
+</html>

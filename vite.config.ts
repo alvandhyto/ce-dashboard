@@ -1,12 +1,20 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
+import { openSpeedTestMiddleware } from "./server/openSpeedTest";
+
+/** The speedtest engine's endpoints for `vite` and `vite preview`. `npm run dev` (server.ts) adds them itself. */
+const openSpeedTest = (): Plugin => ({
+    name: "openspeedtest-endpoints",
+    configureServer: (server) => void server.middlewares.use(openSpeedTestMiddleware),
+    configurePreviewServer: (server) => void server.middlewares.use(openSpeedTestMiddleware),
+});
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, ".", "");
     return {
-        plugins: [react(), tailwindcss()],
+        plugins: [react(), tailwindcss(), openSpeedTest()],
         resolve: {
             alias: {
                 "@": path.resolve(__dirname, "."),

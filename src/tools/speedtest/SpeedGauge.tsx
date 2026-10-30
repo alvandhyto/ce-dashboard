@@ -7,7 +7,6 @@ interface SpeedGaugeProps {
     caption: string;
     /** 0 to 100 */
     progress: number;
-    clientIp?: string | null;
     accent?: Accent;
     /** Digits after the point. Latency is often below 10 ms, where whole numbers say little. */
     decimals?: number;
@@ -19,7 +18,6 @@ export function SpeedGauge({
     unit,
     caption,
     progress,
-    clientIp,
     accent = "blue",
     decimals = 0,
 }: SpeedGaugeProps) {
@@ -56,11 +54,6 @@ export function SpeedGauge({
                     {decimals > 0 ? value.toFixed(decimals) : Math.floor(value)}
                 </span>
                 <span className="mt-1 text-sm text-slate-500 dark:text-slate-400">{unit}</span>
-                {clientIp && (
-                    <span className="mt-4 font-mono text-xs text-slate-500 dark:text-slate-400">
-                        {clientIp}
-                    </span>
-                )}
             </div>
         </div>
     );
