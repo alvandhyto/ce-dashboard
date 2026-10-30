@@ -12,7 +12,7 @@ export const POLL_INTERVAL_MS = 100;
 export const LOAD_TIMEOUT_MS = 15_000;
 
 /**
- * A normal test takes about 45 s (10 pings, then 12 s each for download and upload).
+ * A normal test takes about 40 s (10 pings, then 15 s each for download and upload).
  * Past this, something is stuck, and the test is stopped rather than left spinning.
  */
 export const MAX_TEST_MS = 120_000;

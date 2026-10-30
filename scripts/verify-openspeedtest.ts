@@ -9,7 +9,7 @@
  * It runs the real script, unmodified, in Node against a fake document that only contains the
  * elements the page has, with a simulated network. An element the script needs but the page lacks
  * makes it throw, and the check fails. A full simulated test takes about a minute, because the
- * script's own timings (12 s each for download and upload) are used as they are.
+ * script's own timings (15 s each for download and upload) are used as they are.
  *
  * Needs Node 18 or newer. Nothing is installed or fetched.
  */
@@ -148,15 +148,15 @@ await t("the page is a headless engine: no stylesheet, no visible text of its ow
 await t("every element the app reads is in the page", () => {
     for (const id of ["oDoLiveStatus", "oDoLiveSpeed", "pingResult", "jitterDesk", "downResult", "upRestxt", "ConnectErrorDesk", "startButtonDesk"]) assert.ok(PAGE_IDS.has(id), id);
 });
-await t("measurement settings are OpenSpeedTest's own defaults (from its index.html); only the URL overrides differ", () => {
+await t("measurement settings are OpenSpeedTest's own defaults (from its index.html), except the durations, set for 15 s each", () => {
     const g = createWorld({ rttMs: 5, mbps: 50 }).sandbox;
     // Official values, read from https://github.com/openspeedtest/Speed-Test/blob/main/index.html
     const official: Record<string, unknown> = {
         pingSamples: 10, jitterFinalSample: 0.5, pingTimeOut: 5000, pingMethod: "GET", pingFile: "Upload", ulDataSize: 30,
-        ulDelay: 300, dlDelay: 300, upAdjust: 1.04, dlAdjust: 1.04, dlDuration: 12, ulDuration: 12, dlThreads: 6, ulThreads: 6,
+        ulDelay: 300, dlDelay: 300, upAdjust: 1.04, dlAdjust: 1.04, dlDuration: 12.5, ulDuration: 15, dlThreads: 6, ulThreads: 6,
         enableRun: true, saveData: false, openChannel: "dev",
     };
-    for (const [k, v] of Object.entries(official)) assert.equal(g[k], v, `${k} differs from OpenSpeedTest's default`);
+    for (const [k, v] of Object.entries(official)) assert.equal(g[k], v, `${k} differs from the expected setting`);
     assert.deepEqual(JSON.parse(JSON.stringify(g.openSpeedTestServerList)).map((x: any) => [x.Download, x.Upload]), [["downloading", "upload"]]);
     // The seven that are true in OpenSpeedTest's own page and are switched off here, on purpose.
     for (const k of ["setPingSamples", "setPingTimeout", "setHTTPReq", "stressTest", "selectTest", "selectServer", "enableClean"]) assert.equal(g[k], false, k);
@@ -196,7 +196,7 @@ await t("what the screen shows: ping from its element, a speed only while one is
 let done: ReturnType<typeof createWorld>;
 const seen: Stage[] = []; const liveSeen = { DOWNLOAD: [] as number[], UPLOAD: [] as number[] };
 let last: { value: number; results: ReturnType<typeof viewFromSnapshot>["results"] } | null = null;
-await t("a full test runs start to finish, no exceptions (about 45 s, real durations)", async () => {
+await t("a full test runs start to finish, no exceptions (about 40 s, real durations)", async () => {
     done = createWorld({ rttMs: 20, mbps: 80 }); done.boot();
     assert.equal(typeof done.sandbox.onload, "function", "our glue installed window.onload");
     done.sandbox.onload();                                                             // what the browser does on load

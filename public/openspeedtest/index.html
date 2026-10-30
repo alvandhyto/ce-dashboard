@@ -32,8 +32,10 @@
     var upAdjust = 1.04;
     var dlAdjust = 1.04;
     var enableClean = false;          // default true. ?clean= would remove the overhead compensation
-    var dlDuration = 12;
-    var ulDuration = 12;
+    // OpenSpeedTest's default is 12 s each. The download really runs 2.5 s longer than its
+    // setting (the script waits for its own progress ring), so these give 15 s for both.
+    var dlDuration = 12.5;
+    var ulDuration = 15;
     var dlThreads = 6;
     var ulThreads = 6;
     var enableRun = true;             // OpenSpeedTest default. The app starts the test by clicking its button instead
