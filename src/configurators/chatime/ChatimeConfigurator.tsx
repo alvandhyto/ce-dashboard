@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { RotateCcw, Terminal } from "lucide-react";
+import { Terminal } from "lucide-react";
 
 import { ConfigPreview } from "../../components/configurator/ConfigPreview";
 import { ConfiguratorLayout } from "../../components/configurator/ConfiguratorLayout";
 import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
+import { ResetButton } from "../../components/configurator/ResetButton";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
-import { Button, IconButton } from "../../components/ui/Button";
+import { Button } from "../../components/ui/Button";
 import { Panel } from "../../components/ui/Panel";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { Toast } from "../../components/ui/Toast";
@@ -83,9 +84,7 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                         onBack={onBack}
                         width="wide"
                         actions={
-                            <IconButton label="Reset" onClick={handleReset}>
-                                <RotateCcw className="h-4 w-4" />
-                            </IconButton>
+                            <ResetButton onReset={handleReset} />
                         }
                     />
                 }

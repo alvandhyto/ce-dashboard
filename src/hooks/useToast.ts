@@ -8,7 +8,10 @@ export interface ToastMessage {
     message: string;
 }
 
-/** One toast at a time, auto-dismissed. A new toast replaces the current one. */
+/**
+ * One toast at a time; a new toast replaces the current one. Success toasts go away on
+ * their own. Warnings and errors stay until dismissed, since they are lists to act on.
+ */
 export function useToast(durationMs = 5000) {
     const [toast, setToast] = useState<ToastMessage | null>(null);
     const timer = useRef<number | undefined>(undefined);
@@ -22,7 +25,9 @@ export function useToast(durationMs = 5000) {
         (kind: ToastKind, message: string) => {
             window.clearTimeout(timer.current);
             setToast({ id: Date.now(), kind, message });
-            timer.current = window.setTimeout(() => setToast(null), durationMs);
+            if (kind === "success") {
+                timer.current = window.setTimeout(() => setToast(null), durationMs);
+            }
         },
         [durationMs],
     );

@@ -1,30 +1,36 @@
-import { AnimatePresence } from "motion/react";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { AnimatePresence, LazyMotion } from "motion/react";
+import { Suspense, useEffect, type ReactNode } from "react";
 
 import {
     APPS,
     DASHBOARD_ROUTE,
     isProtectedRoute,
     parentRoute,
+    routeTitle,
 } from "./core/registry";
-import type { Route } from "./core/types";
 import { PageTransition } from "./components/layout/PageTransition";
 import { ThemeProvider } from "./hooks/useTheme";
 import { useAccessGate } from "./hooks/useAccessGate";
+import { useHashRoute } from "./hooks/useHashRoute";
 import { AccessGatePage } from "./pages/AccessGatePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { GeneratorsPage } from "./pages/GeneratorsPage";
 
+/** Keeps Motion's animation code out of the first download; components use `m.*`, not `motion.*`. */
+const loadMotionFeatures = () => import("./lib/motionFeatures").then((mod) => mod.default);
+
 export default function App() {
     return (
         <ThemeProvider>
-            <Router />
+            <LazyMotion features={loadMotionFeatures} strict>
+                <Router />
+            </LazyMotion>
         </ThemeProvider>
     );
 }
 
 function Router() {
-    const [route, setRoute] = useState<Route>(DASHBOARD_ROUTE);
+    const [route, setRoute] = useHashRoute();
     const gate = useAccessGate();
     const protectedRoute = isProtectedRoute(route);
 
@@ -33,6 +39,10 @@ function Router() {
     useEffect(() => {
         if (!protectedRoute) lock();
     }, [protectedRoute, lock]);
+
+    useEffect(() => {
+        document.title = routeTitle(route);
+    }, [route]);
 
     const view = renderRoute();
 
@@ -86,7 +96,9 @@ function Router() {
     }
 
     return (
-        <AnimatePresence mode="wait">
+        // initial={false}: the first page shows at once, without waiting for the animation code.
+        // Each new page starts at the top rather than at the old page's scroll position.
+        <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
             <PageTransition key={view.key}>{view.node}</PageTransition>
         </AnimatePresence>
     );

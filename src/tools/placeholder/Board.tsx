@@ -1,5 +1,5 @@
 import { Circle, X } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import { cn } from "../../lib/cn";
 import type { Board as BoardState, Cell } from "./tictactoe";
 
@@ -39,7 +39,7 @@ export function Board({ board, interactive, onPlay }: BoardProps) {
                         )}
                     >
                         {cell ? (
-                            <motion.span
+                            <m.span
                                 initial={reduceMotion ? false : { scale: 0.6, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ duration: 0.15, ease: "easeOut" }}
@@ -50,7 +50,7 @@ export function Board({ board, interactive, onPlay }: BoardProps) {
                                 ) : (
                                     <Circle className="h-10 w-10" strokeWidth={2.5} />
                                 )}
-                            </motion.span>
+                            </m.span>
                         ) : null}
                     </button>
                 );
