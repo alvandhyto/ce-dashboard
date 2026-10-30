@@ -4,9 +4,8 @@
 #
 #     scripts/deploy.sh
 #
-# Run by the Deploy workflow (.github/workflows/deploy.yml) on every push to main, and fine to
-# run by hand. It stops at the first failure, and the running site is only touched at the very
-# end, so a broken install or build leaves the current version up.
+# Run it on the server after merging into main. It stops at the first failure, and the running
+# site is only touched at the very end, so a broken install or build leaves the current version up.
 #
 # Everything is inside main(), which runs only once bash has read the whole file. The script
 # pulls a new copy of itself; without this, bash would carry on reading the new file mid-run.

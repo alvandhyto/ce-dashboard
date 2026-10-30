@@ -63,7 +63,13 @@ This is the key that unlocks the Generators section. Restart the dev server afte
 
 ## Deploying
 
-The server runs `server.ts` under pm2, from a clone of this repository on the `main` branch. Every push to `main` deploys by itself: the [Deploy workflow](.github/workflows/deploy.yml) runs on a self-hosted GitHub Actions runner installed on the server and calls [`scripts/deploy.sh`](scripts/deploy.sh). That script pulls, runs `npm ci`, builds into `dist-next/`, swaps it in for `dist/` and reloads pm2. It stops at the first failure, so a broken build leaves the running version up. To redeploy by hand, use **Run workflow** in the Actions tab, or run `scripts/deploy.sh` on the server.
+The server runs `server.ts` under pm2, from a clone of this repository on the `main` branch. After merging into `main`, deploy on the server with:
+
+```bash
+scripts/deploy.sh
+```
+
+It pulls, runs `npm ci`, builds into `dist-next/`, swaps that in for `dist/` and reloads pm2. It stops at the first failure, so a broken build leaves the running version up.
 
 Don't edit files in the server's copy: the next pull refuses to overwrite them, and the deploy fails until they are stashed or discarded.
 
