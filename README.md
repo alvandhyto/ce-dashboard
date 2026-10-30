@@ -9,6 +9,7 @@ Everything shares one design system and one registry, so adding a new tool or ge
 - [Tools](#tools)
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
+- [Deploying](#deploying)
 - [Files the app expects in `public/`](#files-the-app-expects-in-public)
 - [Project structure](#project-structure)
 - [How it fits together](#how-it-fits-together)
@@ -47,6 +48,7 @@ npm run dev
 | ----------------- | ----------------------------------------- |
 | `npm run dev`     | Start the dev server with hot reload      |
 | `npm run build`   | Type-check and produce a production build |
+| `npm start`       | Serve the production build (`dist/`)      |
 | `npm run preview` | Serve the production build locally        |
 
 ### Environment variables
@@ -58,6 +60,18 @@ VITE_GENERATOR_PASSWORD=your-access-key
 ```
 
 This is the key that unlocks the Generators section. Restart the dev server after changing it. If the variable is not set, a built-in default from `src/hooks/useAccessGate.ts` is used, so always set your own. Read [Access control](#access-control) before relying on it.
+
+## Deploying
+
+The server runs `server.ts` under pm2, from a clone of this repository on the `main` branch. After merging into `main`, deploy on the server with:
+
+```bash
+scripts/deploy.sh
+```
+
+It pulls, runs `npm ci`, builds into `dist-next/`, swaps that in for `dist/` and reloads pm2. It stops at the first failure, so a broken build leaves the running version up.
+
+Don't edit files in the server's copy: the next pull refuses to overwrite them, and the deploy fails until they are stashed or discarded.
 
 ## Files the app expects in `public/`
 
