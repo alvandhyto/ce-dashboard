@@ -125,7 +125,7 @@ export const GENERATOR_LAUNCHERS: Launcher[] = Object.values(APPS)
     .map(launcherFor);
 
 export const DASHBOARD_ROUTE: Route = { name: "dashboard" };
-export const GENERATORS_ROUTE: Route = { name: "generators" };
+const GENERATORS_ROUTE: Route = { name: "generators" };
 
 /** Where "Back" leads from an app. */
 export const parentRoute = (section: Section): Route =>

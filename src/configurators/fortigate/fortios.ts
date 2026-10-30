@@ -19,7 +19,7 @@ export interface SetNode {
 }
 
 /** Anything that isn't structure or a statement: blank lines, comments, stray text. */
-export interface RawNode {
+interface RawNode {
     kind: "raw";
     raw: string;
 }

@@ -39,7 +39,3 @@ export function getFirstThreeOctets(ip: string): string {
     }
     return ip;
 }
-
-export function getLanPrefix(ip: string): string {
-    return `${getFirstThreeOctets(ip)}.0`;
-}

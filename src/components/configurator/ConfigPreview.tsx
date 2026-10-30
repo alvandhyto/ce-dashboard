@@ -7,8 +7,6 @@ import { Button } from "../ui/Button";
 import type { LineKind } from "../../lib/syntax";
 import { Panel } from "../ui/Panel";
 
-export type { LineKind };
-
 /**
  * - empty:    nothing generated yet
  * - current:  output matches the parameters on screen

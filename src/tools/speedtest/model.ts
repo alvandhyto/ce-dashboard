@@ -7,10 +7,10 @@ export interface Results {
     upload: number;
 }
 
-export const EMPTY_RESULTS: Results = { ping: 0, jitter: 0, download: 0, upload: 0 };
+const EMPTY_RESULTS: Results = { ping: 0, jitter: 0, download: 0, upload: 0 };
 
 /** Speed at which the gauge ring is full. */
-export const GAUGE_MAX_MBPS = 600;
+const GAUGE_MAX_MBPS = 600;
 
 export const STAGE_LABEL: Record<Stage, string> = {
     IDLE: "Ready",
@@ -80,7 +80,7 @@ export function parseReport(report: string): Results | null {
 /** True while the engine is actually moving data, so the big number is a speed and not left over from the pings. */
 const isMeasuring = (status: string) => /^(testing|mbps)/i.test(status);
 
-export interface EngineView {
+interface EngineView {
     results: Results;
     /** What the gauge shows. */
     value: number;

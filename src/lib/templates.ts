@@ -4,9 +4,9 @@
  */
 
 /** Templates don't change during a session, so switching back and forth shouldn't refetch. */
-export const templateCache = new Map<string, string>();
+const templateCache = new Map<string, string>();
 
-export async function fetchTemplate(url: string, signal: AbortSignal): Promise<string> {
+async function fetchTemplate(url: string, signal: AbortSignal): Promise<string> {
     let response: Response;
     try {
         response = await fetch(url, { signal });

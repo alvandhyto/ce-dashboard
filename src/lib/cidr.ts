@@ -28,12 +28,12 @@ export interface Subnet {
 const PREFIX_PATTERN = /^(0|[1-9]\d?)$/;
 
 /** Dotted quad to unsigned 32-bit integer. Expects a valid IPv4 address. */
-export function ipToInt(ip: string): number {
+function ipToInt(ip: string): number {
     const [a, b, c, d] = ip.split(".").map(Number);
     return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0;
 }
 
-export function intToIp(value: number): string {
+function intToIp(value: number): string {
     return [
         value >>> 24,
         (value >>> 16) & 255,
@@ -43,7 +43,7 @@ export function intToIp(value: number): string {
 }
 
 /** /24 becomes 0xFFFFFF00. The /0 case is special because JS shifts wrap around at 32. */
-export function prefixToMask(prefix: number): number {
+function prefixToMask(prefix: number): number {
     return prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
 }
 
@@ -109,16 +109,10 @@ export function isUsableHost(subnet: Subnet): boolean {
 
 /* Single-value shortcuts. Each returns null when the input isn't valid CIDR. */
 
-export const getNetmask = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.netmask ?? null;
 export const getNetworkAddress = (cidr: string | Cidr) =>
     getSubnet(cidr)?.network ?? null;
-export const getBroadcastAddress = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.broadcast ?? null;
 export const getFirstUsableIp = (cidr: string | Cidr) =>
     getSubnet(cidr)?.firstUsable ?? null;
-export const getLastUsableIp = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.lastUsable ?? null;
 export const getWanHostIp = (cidr: string | Cidr) =>
     getSubnet(cidr)?.wanHost ?? null;
 export const getWanGatewayIp = (cidr: string | Cidr) =>
@@ -127,5 +121,3 @@ export const getDhcpStartIp = (cidr: string | Cidr) =>
     getSubnet(cidr)?.dhcpStart ?? null;
 export const getDhcpEndIp = (cidr: string | Cidr) =>
     getSubnet(cidr)?.dhcpEnd ?? null;
-export const getUsableHostCount = (cidr: string | Cidr) =>
-    getSubnet(cidr)?.usableHosts ?? null;
