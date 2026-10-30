@@ -14,7 +14,7 @@ import {
 import type { Replacements } from "../../lib/placeholders";
 import { rules, type FieldDef } from "../../lib/validation";
 // Existing helper from the project.
-import { subtractOneFromIP } from "../../utils";
+import { subtractOneFromIP } from "../../lib/ip";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */

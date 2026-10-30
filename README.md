@@ -88,7 +88,6 @@ src/
 ├── main.tsx                  Entry point
 ├── App.tsx                   Router: current route, access gate, page transitions
 ├── index.css                 Tailwind import, dark variant, scrollbar styles
-├── utils.ts                  IP string helpers used by the FortiGate generator
 │
 ├── core/                     The core: knows which tools exist
 │   ├── registry.tsx          Single source of truth for every tool and generator
@@ -111,7 +110,7 @@ src/
 │   └── ui/                   Button, Panel, TextField, SelectField, ToggleCard, Toast, ...
 │
 ├── hooks/                    useTheme, useAccessGate, useConfigForm, useTemplate, ...
-└── lib/                      Plain functions: templating, validation, clipboard, accent colours
+└── lib/                      Plain functions: templating, validation, IP and subnet maths, clipboard, accent colours
 ```
 
 The three top-level groups that are easy to mix up:
