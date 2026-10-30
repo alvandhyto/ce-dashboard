@@ -2,11 +2,12 @@ import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import { fileURLToPath } from "url";
 import { openSpeedTestMiddleware } from "./server/openSpeedTest";
 
 async function startServer() {
     const app = express();
-    const PORT = Number(process.env.PORT) || 3000;
+    const PORT = Number(process.env.PORT) || 80;
 
     // The speedtest engine's download, upload and ping endpoints (before anything that reads bodies).
     app.use(openSpeedTestMiddleware);
@@ -24,9 +25,25 @@ async function startServer() {
         });
         app.use(vite.middlewares);
     } else {
-        const distPath = path.join(process.cwd(), "dist");
-        app.use(express.static(distPath));
+        // Next to this file, not the working directory, so it doesn't matter where pm2 is started from.
+        const distPath = path.join(
+            path.dirname(fileURLToPath(import.meta.url)),
+            "dist",
+        );
+        // Hashed build files never change, so browsers may keep them. A missing one is a real 404:
+        // answering with index.html would hand the browser HTML as a stylesheet, which it drops.
+        app.use(
+            "/assets",
+            express.static(path.join(distPath, "assets"), {
+                immutable: true,
+                maxAge: "1y",
+                fallthrough: false,
+            }),
+        );
+        app.use(express.static(distPath, { index: false }));
+        // index.html names the current build's files, so it is checked again on every load.
         app.get("/{*splat}", (req, res) => {
+            res.set("Cache-Control", "no-cache");
             res.sendFile(path.join(distPath, "index.html"));
         });
     }
