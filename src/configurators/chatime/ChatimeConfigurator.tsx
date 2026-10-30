@@ -1,10 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { RotateCcw, Terminal } from "lucide-react";
 
-import {
-    ConfigPreview,
-    type PreviewState,
-} from "../../components/configurator/ConfigPreview";
+import { ConfigPreview } from "../../components/configurator/ConfigPreview";
 import { ConfiguratorLayout } from "../../components/configurator/ConfiguratorLayout";
 import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
@@ -17,7 +14,7 @@ import { Toast } from "../../components/ui/Toast";
 import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
 import { useTemplates } from "../../hooks/useTemplates";
-import { useToast } from "../../hooks/useToast";
+import { useGenerator } from "../../hooks/useGenerator";
 import { classifyFortiOSLine } from "../../lib/syntax";
 
 import {
@@ -33,18 +30,13 @@ import {
 } from "./definition";
 import { generateChatimeConfig } from "./generate";
 
-export type { Series } from "./definition";
-
 interface GeneratedConfig {
     content: string;
     filename: string;
-    /** Snapshot of the inputs used, to tell whether the output is still current. */
-    signature: string;
 }
 
 export default function ChatimeConfigurator({ onBack }: AppProps) {
     const [series, setSeries] = useState<Series>(DEFAULT_SERIES);
-    const [generated, setGenerated] = useState<GeneratedConfig | null>(null);
 
     const options: ChatimeOptions = { series };
     const form = useConfigForm({
@@ -58,64 +50,20 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
         error: templateError,
         retry,
     } = useTemplates([templateUrl(series)]);
-    const { toast, show: showToast, dismiss: dismissToast } = useToast();
-
-    const fieldsIn = (group: string) =>
-        form.visibleFields.filter((field) => field.group === group);
-    const sharedFieldProps = {
-        values: form.values,
-        errors: form.errors,
-        onChange: form.setValue,
-    };
-
-    const currentSignature = JSON.stringify({
-        series,
-        values: form.trimmedValues,
-    });
-    const previewState: PreviewState = !generated
-        ? "empty"
-        : generated.signature === currentSignature
-          ? "current"
-          : "outdated";
-
-    const handleGenerate = () => {
-        if (!template) return;
-        if (!form.validate()) return;
-
-        try {
-            const { content, filename, warnings } = generateChatimeConfig(
-                template,
-                form.trimmedValues,
-            );
-            setGenerated({ content, filename, signature: currentSignature });
-
-            if (warnings.length > 0) {
-                showToast(
-                    "warning",
-                    ["Generated, but check:", ...warnings].join("\n"),
-                );
-            } else {
-                showToast("success", "Configuration generated.");
-            }
-        } catch (error) {
-            showToast(
-                "error",
-                error instanceof Error
-                    ? error.message
-                    : "The configuration could not be generated.",
-            );
-        }
-    };
+    const generator = useGenerator<GeneratedConfig>({ series, values: form.trimmedValues });
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        handleGenerate();
+        if (!template || !form.validate()) return;
+        generator.run(() => {
+            const { content, filename, warnings } = generateChatimeConfig(template, form.trimmedValues);
+            return { output: { content, filename }, warnings };
+        });
     };
 
     const handleReset = () => {
         form.reset();
-        setGenerated(null);
-        dismissToast();
+        generator.clear();
     };
 
     return (
@@ -166,7 +114,7 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                         >
                             <FormSection title="Device">
                                 <SegmentedControl
-                                    id="chatime-series"
+                                    name="chatime-series"
                                     label="Model"
                                     value={series}
                                     options={SERIES_OPTIONS}
@@ -179,29 +127,29 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                                     onRetry={retry}
                                 />
                                 <FieldGrid
-                                    fields={fieldsIn("device")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("device")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
 
                             <FormSection title="AirFiber Link">
                                 <FieldGrid
-                                    fields={fieldsIn("airfiber")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("airfiber")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
 
                             <FormSection title="M2M Link">
                                 <FieldGrid
-                                    fields={fieldsIn("m2m")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("m2m")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
 
                             <FormSection title="PTP, LAN and Loopback">
                                 <FieldGrid
-                                    fields={fieldsIn("network")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("network")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
                         </Panel>
@@ -210,16 +158,16 @@ export default function ChatimeConfigurator({ onBack }: AppProps) {
                 main={
                     <ConfigPreview
                         filename={
-                            generated?.filename ??
+                            generator.output?.filename ??
                             outputFileName("", "fortigate_chatime")
                         }
-                        content={generated?.content ?? null}
-                        state={previewState}
+                        content={generator.output?.content ?? null}
+                        state={generator.state}
                         classifyLine={classifyFortiOSLine}
                     />
                 }
             />
-            <Toast toast={toast} onDismiss={dismissToast} />
+            <Toast toast={generator.toast} onDismiss={generator.dismissToast} />
         </>
     );
 }

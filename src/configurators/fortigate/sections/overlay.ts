@@ -5,13 +5,14 @@
  * number of tunnels follows the number of uplinks and each one sits on whichever
  * port its uplink was given.
  *
- * Four sections get an entry per tunnel:
+ * Five sections get an entry per tunnel:
  *   config system interface           the tunnel interface
  *   config vpn ipsec phase1-interface the IKE side
  *   config vpn ipsec phase2-interface the IPsec side
  *   config firewall policy            one policy, MGMT-LOOPBACK, listing every tunnel
+ *   config router bgp                 a neighbor per tunnel: the hub's end of it
  *
- * Everything except the port is fixed and comes from the sample config.
+ * Everything except the port is fixed and comes from the sample configs.
  */
 import {
     editName,
@@ -27,8 +28,8 @@ import {
     valueOf,
     type ConfigNode,
     type Document,
-} from "./fortios";
-import type { UplinkPlans } from "./uplinks";
+} from "../fortios";
+import type { SitePlan } from "../plan";
 
 /**
  * The hub every site builds its overlay to, and the key it uses.
@@ -42,12 +43,21 @@ const HUB = {
     presharedKey: "e8AENJB8p1be8y2ynEg8",
 };
 
+/** `hubAddress` is the hub's end of the tunnel, where its BGP session goes. */
 const LINKS = {
-    primary: { name: "SPOKE-MGMT-OV-1", networkId: 11 },
-    secondary: { name: "SPOKE-MGMT-OV-2", networkId: 22 },
+    primary: { name: "SPOKE-MGMT-OV-1", networkId: 11, hubAddress: "100.108.255.254", description: "MGMT-OV-1-JKTTBSFTGW1" },
+    secondary: { name: "SPOKE-MGMT-OV-2", networkId: 22, hubAddress: "100.109.255.254", description: "MGMT-OV-2-JKTTBSFTGW1" },
 } as const;
 
 type Link = (typeof LINKS)[keyof typeof LINKS];
+
+/** The BGP session each tunnel carries to the hub, as the templates and samples write it. */
+const BGP = {
+    remoteAs: "4200000000",
+    localAs: "4200000001",
+    routeMapIn: "IN-FROM-JKTTBSFTGW1",
+    routeMapOut: "OUT-TO-JKTTBSFTGW1",
+};
 
 const POLICY = {
     id: "100",
@@ -60,6 +70,7 @@ const INTERFACES = "system interface";
 const PHASE1 = "vpn ipsec phase1-interface";
 const PHASE2 = "vpn ipsec phase2-interface";
 const POLICIES = "firewall policy";
+const BGP_SECTION = "router bgp";
 
 /** The order FortiOS needs them in: tunnels are defined before the policy that uses them. */
 const SECTION_ORDER = [INTERFACES, PHASE1, PHASE2, POLICIES];
@@ -122,6 +133,16 @@ const policy = (tunnels: readonly string[]) =>
         ["logtraffic", "all"],
     ]);
 
+const bgpNeighbor = (link: Link) =>
+    newEdit(quote(link.hubAddress), [
+        ["description", quote(link.description)],
+        ["remote-as", BGP.remoteAs],
+        ["local-as", BGP.localAs],
+        ["route-map-in", quote(BGP.routeMapIn)],
+        ["route-map-out", quote(BGP.routeMapOut)],
+        ["connect-timer", "1"],
+    ]);
+
 /* ------------------------------------------------------------------ */
 /* Placing it in the document                                           */
 /* ------------------------------------------------------------------ */
@@ -134,16 +155,8 @@ const policy = (tunnels: readonly string[]) =>
  * carries an older copy. Throws when a port doesn't exist in the template or
  * policy 100 is taken by something else.
  */
-export function applyOverlay(doc: Document, plans: UplinkPlans): string[] {
-    const tunnels = (["primary", "secondary"] as const).flatMap((role) => {
-        const plan = plans[role];
-        return plan ? [{ link: LINKS[role], port: plan.interface }] : [];
-    });
-
-    // Without an interface section there are no ports to attach tunnels to.
-    if (!findConfig(doc, INTERFACES)) {
-        return ["The template has no `config system interface` section, so the management overlay was not added."];
-    }
+export function applyOverlay(doc: Document, plan: SitePlan): string[] {
+    const tunnels = plan.uplinks.map((uplink) => ({ link: LINKS[uplink.role], port: uplink.port }));
 
     const removed = removeExisting(doc);
 
@@ -170,12 +183,27 @@ export function applyOverlay(doc: Document, plans: UplinkPlans): string[] {
     }
     policies.children.push(policy(tunnels.map(({ link }) => link.name)));
 
+    addBgpNeighbors(doc, tunnels.map(({ link }) => link));
+
     return removed > 0
-        ? [`The template already had ${removed} management overlay entries (SPOKE-MGMT-OV tunnels and the MGMT-LOOPBACK policy); they were replaced by the generated ones.`]
+        ? [`The template already had ${removed} management overlay entries (SPOKE-MGMT-OV tunnels, the MGMT-LOOPBACK policy or hub BGP neighbors); they were replaced by the generated ones.`]
         : [];
 }
 
-/** Removes the tunnels and the policy from a previous copy. Returns how many entries went. */
+/** Adds a hub neighbor per tunnel to the template's `config neighbor`; the rest of its BGP stays as it is. */
+function addBgpNeighbors(doc: Document, links: readonly Link[]): void {
+    const bgp = findConfig(doc, BGP_SECTION);
+    if (!bgp) throw new Error("The template has no `config router bgp` section for the management overlay.");
+
+    let neighbors = findConfig(bgp, "neighbor");
+    if (!neighbors) {
+        neighbors = newConfig("neighbor");
+        bgp.children.push(neighbors);
+    }
+    neighbors.children.push(...links.map(bgpNeighbor));
+}
+
+/** Removes the tunnels, the policy and the hub neighbors from a previous copy. Returns how many entries went. */
 function removeExisting(doc: Document): number {
     const tunnelNames: string[] = Object.values(LINKS).map((link) => link.name);
     let removed = 0;
@@ -196,6 +224,16 @@ function removeExisting(doc: Document): number {
         const name = edit.children.find((node) => isSet(node, "name"));
         if (name && isSet(name) && unquote(valueOf(name)) === POLICY.name) {
             removeNode(policies!, edit);
+            removed++;
+        }
+    }
+
+    const bgp = findConfig(doc, BGP_SECTION);
+    const neighbors = bgp && findConfig(bgp, "neighbor");
+    const hubAddresses: string[] = Object.values(LINKS).map((link) => link.hubAddress);
+    for (const edit of neighbors?.children.filter(isEdit) ?? []) {
+        if (hubAddresses.includes(editName(edit))) {
+            removeNode(neighbors!, edit);
             removed++;
         }
     }

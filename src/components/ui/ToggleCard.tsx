@@ -40,15 +40,15 @@ export function ToggleCard({ label, description, checked, onChange, disabled = f
                         : "border-slate-300 bg-white dark:border-slate-600 dark:bg-transparent",
                 )}
             >
-                {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                {checked ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
             </span>
             <span className="min-w-0">
                 <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{label}</span>
-                {description && (
+                {description ? (
                     <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
                         {description}
                     </span>
-                )}
+                ) : null}
             </span>
         </label>
     );

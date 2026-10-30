@@ -15,9 +15,9 @@ export function FormSection({ title, description, children }: FormSectionProps) 
         <section className="space-y-4 p-5">
             <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
-                {description && (
+                {description ? (
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
-                )}
+                ) : null}
             </div>
             {children}
         </section>

@@ -8,7 +8,6 @@ import {
     MultiConfigPreview,
     type GeneratedFile,
 } from "../../components/configurator/MultiConfigPreview";
-import type { PreviewState } from "../../components/configurator/ConfigPreview";
 import { TemplateStatus } from "../../components/configurator/TemplateStatus";
 import { AppHeader } from "../../components/layout/AppHeader";
 import { Button, IconButton } from "../../components/ui/Button";
@@ -18,7 +17,7 @@ import { Toast } from "../../components/ui/Toast";
 import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
 import { useTemplates } from "../../hooks/useTemplates";
-import { useToast } from "../../hooks/useToast";
+import { useGenerator } from "../../hooks/useGenerator";
 import { classifyFortiOSLine } from "../../lib/syntax";
 
 import {
@@ -35,20 +34,11 @@ import {
 } from "./definition";
 import { generateKfcConfigs } from "./generate";
 
-export type { Series } from "./definition";
-
-interface GeneratedState {
-    files: GeneratedFile[];
-    /** Snapshot of the inputs used, to tell whether the output is still current. */
-    signature: string;
-}
-
 /** A module-level constant, so the memoised preview isn't re-rendered for nothing. */
 const NO_FILES: GeneratedFile[] = [];
 
 export default function KfcConfigurator({ onBack }: AppProps) {
     const [series, setSeries] = useState<Series>(DEFAULT_SERIES);
-    const [generated, setGenerated] = useState<GeneratedState | null>(null);
 
     const options: KfcOptions = { series };
     const form = useConfigForm({
@@ -62,70 +52,23 @@ export default function KfcConfigurator({ onBack }: AppProps) {
         error: templateError,
         retry,
     } = useTemplates(templateUrls(series));
-    const { toast, show: showToast, dismiss: dismissToast } = useToast();
-
-    const fieldsIn = (group: string) =>
-        form.visibleFields.filter((field) => field.group === group);
-    const sharedFieldProps = {
-        values: form.values,
-        errors: form.errors,
-        onChange: form.setValue,
-    };
-
-    const currentSignature = JSON.stringify({
-        series,
-        values: form.trimmedValues,
-    });
-    const previewState: PreviewState = !generated
-        ? "empty"
-        : generated.signature === currentSignature
-          ? "current"
-          : "outdated";
-
-    const handleGenerate = () => {
-        if (!templates) return;
-        if (!form.validate()) return;
-
-        try {
-            const { files, warnings } = generateKfcConfigs(
-                templates,
-                form.trimmedValues,
-                series,
-            );
-            setGenerated({ files, signature: currentSignature });
-
-            if (warnings.length > 0) {
-                showToast(
-                    "warning",
-                    ["Generated, but check:", ...warnings].join("\n"),
-                );
-            } else {
-                showToast(
-                    "success",
-                    files.length > 1
-                        ? `${files.length} configurations generated.`
-                        : "Configuration generated.",
-                );
-            }
-        } catch (error) {
-            showToast(
-                "error",
-                error instanceof Error
-                    ? error.message
-                    : "The configuration could not be generated.",
-            );
-        }
-    };
+    const generator = useGenerator<GeneratedFile[]>({ series, values: form.trimmedValues });
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        handleGenerate();
+        if (!templates || !form.validate()) return;
+        generator.run(
+            () => {
+                const { files, warnings } = generateKfcConfigs(templates, form.trimmedValues, series);
+                return { output: files, warnings };
+            },
+            (files) => (files.length > 1 ? `${files.length} configurations generated.` : "Configuration generated."),
+        );
     };
 
     const handleReset = () => {
         form.reset();
-        setGenerated(null);
-        dismissToast();
+        generator.clear();
     };
 
     return (
@@ -177,7 +120,7 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                         >
                             <FormSection title="Device">
                                 <SegmentedControl
-                                    id="kfc-series"
+                                    name="kfc-series"
                                     label="Model"
                                     value={series}
                                     options={SERIES_OPTIONS}
@@ -190,17 +133,17 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                                     onRetry={retry}
                                 />
                                 <FieldGrid
-                                    fields={fieldsIn("device")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("device")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
 
                             <FormSection title="WAN Links">
                                 <FieldGrid
-                                    fields={fieldsIn("link")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("link")}
+                                    {...form.fieldProps}
                                 />
-                                {!hasBroadband(series) && (
+                                {hasBroadband(series) ? null : (
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
                                         The 30G template has no broadband link.
                                     </p>
@@ -209,8 +152,8 @@ export default function KfcConfigurator({ onBack }: AppProps) {
 
                             <FormSection title="LAN and Loopback Links">
                                 <FieldGrid
-                                    fields={fieldsIn("network")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("network")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
                         </Panel>
@@ -218,14 +161,14 @@ export default function KfcConfigurator({ onBack }: AppProps) {
                 }
                 main={
                     <MultiConfigPreview
-                        files={generated?.files ?? NO_FILES}
+                        files={generator.output ?? NO_FILES}
                         emptyFilename="kfc.conf"
-                        state={previewState}
+                        state={generator.state}
                         classifyLine={classifyFortiOSLine}
                     />
                 }
             />
-            <Toast toast={toast} onDismiss={dismissToast} />
+            <Toast toast={generator.toast} onDismiss={generator.dismissToast} />
         </>
     );
 }

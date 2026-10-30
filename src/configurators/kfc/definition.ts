@@ -6,10 +6,9 @@
  * Unlike the FortiGate generator, this one is plain placeholder replacement:
  * the interfaces are the same on every site, only addresses change.
  */
+import { getSubnet, isUsableHost } from "../../lib/cidr";
 import type { Replacements } from "../../lib/placeholders";
-import { rules, type FieldDef } from "../../lib/validation";
-// Existing helpers from the project.
-import { getFirstThreeOctets, subtractOneFromIP } from "../../lib/ip";
+import { rules, type FieldDef, type Rule } from "../../lib/validation";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */
@@ -107,6 +106,32 @@ const sidRules = [
     rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
 ];
 
+/**
+ * Prefix lengths the templates are written for: `set ip [IP_INTERNET] 255.255.255.248`,
+ * `set ip [IP_BROADBAND] 255.255.255.252`, and a /24 LAN throughout.
+ */
+const INTERNET_PREFIX = 29;
+const BROADBAND_PREFIX = 30;
+const LAN_PREFIX = 24;
+
+/**
+ * A link address is the FortiGate's own: a usable host of its subnet, and not the first one,
+ * which is the provider's gateway.
+ */
+const linkHost =
+    (prefix: number): Rule =>
+    (value) => {
+        const subnet = getSubnet({ ip: value, prefix });
+        if (!subnet) return null; // rules.ipv4 reports it
+        if (!isUsableHost(subnet)) {
+            return `${value} is the network or broadcast address of its /${prefix}. Use an address from ${subnet.firstUsable} to ${subnet.lastUsable}.`;
+        }
+        if (value === subnet.firstUsable) {
+            return `${value} is the provider's gateway (the first address of its /${prefix}). Enter the FortiGate's address.`;
+        }
+        return null;
+    };
+
 /** Order here is the order on screen within each group. */
 export const FIELDS: readonly FieldDef<KfcFieldKey, KfcOptions>[] = [
     {
@@ -145,7 +170,7 @@ export const FIELDS: readonly FieldDef<KfcFieldKey, KfcOptions>[] = [
         placeholder: "e.g. 123.231.211.162",
         span: "full",
         required: true,
-        rules: [rules.ipv4()],
+        rules: [rules.ipv4(), linkHost(INTERNET_PREFIX)],
     },
     {
         key: "ip_broadband",
@@ -155,7 +180,7 @@ export const FIELDS: readonly FieldDef<KfcFieldKey, KfcOptions>[] = [
         span: "full",
         required: true,
         visible: ({ series }) => hasBroadband(series),
-        rules: [rules.ipv4()],
+        rules: [rules.ipv4(), linkHost(BROADBAND_PREFIX)],
     },
     {
         key: "ip_lan",
@@ -193,25 +218,34 @@ export const FIELDS: readonly FieldDef<KfcFieldKey, KfcOptions>[] = [
 /**
  * Placeholders of the device template. Expects trimmed, validated input.
  *
- * [IP_LAN] is the first three octets (192.168.88), because the templates
- * write it as "[IP_LAN].0 255.255.255.0" or "[IP_LAN].1-[IP_LAN].254". That
- * makes the LAN a /24, which is what the templates assume everywhere.
- * [IP_GATEWAY_*] is the link address minus one.
+ * Every derived address comes from getSubnet, with the prefix the templates are written
+ * for: a link's gateway is the first usable address of its subnet, and the LAN gives its
+ * network, its usable range and the NAT pool address (.20 of the /24).
  */
 export function buildDeviceReplacements(
     values: KfcValues,
     series: Series,
 ): Replacements {
-    const broadband = hasBroadband(series) ? values.ip_broadband : "";
+    const internet = getSubnet({
+        ip: values.ip_internet,
+        prefix: INTERNET_PREFIX,
+    });
+    const broadband = hasBroadband(series)
+        ? getSubnet({ ip: values.ip_broadband, prefix: BROADBAND_PREFIX })
+        : null;
+    const lan = getSubnet({ ip: values.ip_lan, prefix: LAN_PREFIX });
 
     return {
         "[HOSTNAME]": values.hostname,
         "[SID_INTERNET]": values.sid_internet,
         "[IP_INTERNET]": values.ip_internet,
-        "[IP_GATEWAY_INTERNET]": subtractOneFromIP(values.ip_internet),
-        "[IP_BROADBAND]": broadband,
-        "[IP_GATEWAY_BROADBAND]": broadband ? subtractOneFromIP(broadband) : "",
-        "[IP_LAN]": getFirstThreeOctets(values.ip_lan),
+        "[IP_GATEWAY_INTERNET]": internet?.firstUsable ?? "",
+        "[IP_BROADBAND]": broadband?.ip ?? "",
+        "[IP_GATEWAY_BROADBAND]": broadband?.firstUsable ?? "",
+        "[NETWORK_LAN]": lan?.network ?? "",
+        "[FIRST_USABLE_LAN]": lan?.firstUsable ?? "",
+        "[LAST_USABLE_LAN]": lan?.lastUsable ?? "",
+        "[IP_NAT_POOL]": lan?.at(20) ?? "",
         "[IP_LOOPBACK0]": values.loopback0,
         "[IP_LOOPBACK205]": values.loopback205,
     };

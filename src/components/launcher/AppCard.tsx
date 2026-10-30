@@ -10,6 +10,8 @@ export interface AppCardProps {
     accent: Accent;
     /** Shows a lock badge for destinations behind the access gate. */
     restricted?: boolean;
+    /** Called on hover and focus, so what the card opens can start loading before the click. */
+    preload?: () => void;
     onClick: () => void;
 }
 
@@ -20,22 +22,25 @@ export function AppCard({
     icon,
     accent,
     restricted,
+    preload,
     onClick,
 }: AppCardProps) {
     return (
         <button
             type="button"
             onClick={onClick}
+            onPointerEnter={preload}
+            onFocus={preload}
             className="group flex h-full w-full cursor-pointer flex-col items-start rounded-xl border border-slate-200 bg-white p-6 text-left transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 dark:border-white/10 dark:bg-[#151A22] dark:hover:border-white/25"
         >
             <div className="flex w-full items-start justify-between gap-3">
                 <AppIcon accent={accent}>{icon}</AppIcon>
-                {restricted && (
+                {restricted ? (
                     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                         <Lock className="h-3.5 w-3.5" />
                         Restricted
                     </span>
-                )}
+                ) : null}
             </div>
 
             <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-tight">

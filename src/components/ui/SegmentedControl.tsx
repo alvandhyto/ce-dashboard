@@ -1,14 +1,15 @@
 import { cn } from "../../lib/cn";
 
 interface SegmentedControlProps<T extends string> {
-    /** Groups the radio inputs. Must be unique on the page. */
-    id: string;
+    /** Groups the radio inputs into one set. Must be unique on the page. */
+    name: string;
     label: string;
     /** Keep the label for screen readers only. For controls whose meaning is obvious from context. */
     hideLabel?: boolean;
-    value: T;
+    /** T is read from `options` alone, so a state setter fits onChange. */
+    value: NoInfer<T>;
     options: ReadonlyArray<{ value: T; label: string }>;
-    onChange: (value: T) => void;
+    onChange: (value: NoInfer<T>) => void;
 }
 
 /**
@@ -16,7 +17,7 @@ interface SegmentedControlProps<T extends string> {
  * Built on real radio inputs, so arrow keys, Tab and screen readers work.
  */
 export function SegmentedControl<T extends string>({
-    id,
+    name,
     label,
     hideLabel = false,
     value,
@@ -38,7 +39,7 @@ export function SegmentedControl<T extends string>({
                     <label key={option.value} className="flex">
                         <input
                             type="radio"
-                            id={id}
+                            name={name}
                             value={option.value}
                             checked={value === option.value}
                             onChange={() => onChange(option.value)}

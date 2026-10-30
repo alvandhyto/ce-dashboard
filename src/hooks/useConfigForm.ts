@@ -58,7 +58,13 @@ export function useConfigForm<K extends string, C>({
         setShowErrors(false);
     }, [initialValues]);
 
-    return { values, trimmedValues, errors, visibleFields, setValue, validate, reset };
+    /** The visible fields of one form section, e.g. "primary". */
+    const fieldsIn = (group: string) => visibleFields.filter((field) => field.group === group);
+
+    /** What every FieldGrid needs besides its fields. */
+    const fieldProps = { values, errors, onChange: setValue };
+
+    return { values, trimmedValues, errors, visibleFields, fieldsIn, fieldProps, setValue, validate, reset };
 }
 
 function trimValues<K extends string>(values: Record<K, string>): Record<K, string> {

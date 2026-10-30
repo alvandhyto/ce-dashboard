@@ -54,11 +54,11 @@ export function TextField({
                         : "border-slate-300 focus:border-slate-500 focus:ring-slate-400/25 dark:border-white/15 dark:focus:border-slate-400",
                 )}
             />
-            {error && (
+            {error ? (
                 <p id={errorId} className="mt-1.5 text-xs text-red-600 dark:text-red-400">
                     {error}
                 </p>
-            )}
+            ) : null}
         </div>
     );
 }

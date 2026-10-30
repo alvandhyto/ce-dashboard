@@ -1,10 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { RotateCcw, Terminal } from "lucide-react";
 
-import {
-    ConfigPreview,
-    type PreviewState,
-} from "../../components/configurator/ConfigPreview";
+import { ConfigPreview } from "../../components/configurator/ConfigPreview";
 import { ConfiguratorLayout } from "../../components/configurator/ConfiguratorLayout";
 import { FieldGrid } from "../../components/configurator/FieldGrid";
 import { FormSection } from "../../components/configurator/FormSection";
@@ -18,7 +15,7 @@ import { ToggleCard } from "../../components/ui/ToggleCard";
 import type { AppProps } from "../../core/types";
 import { useConfigForm } from "../../hooks/useConfigForm";
 import { useTemplates } from "../../hooks/useTemplates";
-import { useToast } from "../../hooks/useToast";
+import { useGenerator } from "../../hooks/useGenerator";
 
 import {
     DEFAULT_FIRMWARE,
@@ -45,13 +42,9 @@ import { generateConfig, inspectTemplate } from "./generate";
 import { classifyFortiOSLine } from "../../lib/syntax";
 import { UplinkSection } from "./UplinkSection";
 
-export type { FirmwareVersion, Series } from "./definition";
-
 interface GeneratedConfig {
     content: string;
     filename: string;
-    /** Snapshot of the inputs used, to tell whether the output is still current. */
-    signature: string;
 }
 
 export default function FortigateConfigurator({ onBack }: AppProps) {
@@ -59,7 +52,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const [firmware, setFirmware] = useState<FirmwareVersion>(DEFAULT_FIRMWARE);
     const [dualLink, setDualLink] = useState(false);
     const [choices, setChoices] = useState<UplinkChoices>(INITIAL_CHOICES);
-    const [generated, setGenerated] = useState<GeneratedConfig | null>(null);
 
     const {
         status: templateStatus,
@@ -67,7 +59,6 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         error: templateError,
         retry,
     } = useTemplates([templateUrl(series, firmware)]);
-    const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
     // Ports and default uplink positions come from the selected template, so
     // 30G and 40F each offer their own. Falls back to a fixed list until the
@@ -84,28 +75,17 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     );
 
     const options: FortigateOptions = { dualLink, uplinks };
-
     const form = useConfigForm({
         initialValues: INITIAL_VALUES,
         fields: FIELDS,
         context: options,
     });
-
-    const fieldsIn = (group: string) =>
-        form.visibleFields.filter((field) => field.group === group);
-
-    const currentSignature = JSON.stringify({
+    const generator = useGenerator<GeneratedConfig>({
         series,
         firmware,
         options,
         values: form.trimmedValues,
     });
-
-    const previewState: PreviewState = !generated
-        ? "empty"
-        : generated.signature === currentSignature
-          ? "current"
-          : "outdated";
 
     // Picking a port pins both uplinks, so a later template switch can't move the other one.
     const changeInterface = (role: UplinkRole, next: string) =>
@@ -113,59 +93,23 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
     const changeDhcp = (role: UplinkRole, dhcp: boolean) =>
         setChoices((current) => assignDhcp(current, role, dhcp));
 
-    const handleGenerate = () => {
-        if (!template) return;
-        if (!form.validate()) return;
-
-        try {
-            const { content, warnings } = generateConfig(
-                template,
-                form.trimmedValues,
-                options,
-            );
-
-            setGenerated({
-                content,
-                filename: outputFileName(form.trimmedValues.hostname),
-                signature: currentSignature,
-            });
-
-            if (warnings.length > 0) {
-                showToast(
-                    "warning",
-                    ["Generated, but check:", ...warnings].join("\n"),
-                );
-            } else {
-                showToast("success", "Configuration generated.");
-            }
-        } catch (error) {
-            showToast(
-                "error",
-
-                error instanceof Error
-                    ? error.message
-                    : "The configuration could not be generated.",
-            );
-        }
-    };
-
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        handleGenerate();
+        if (!template || !form.validate()) return;
+        generator.run(() => {
+            const { content, warnings } = generateConfig(template, form.trimmedValues, options);
+            return {
+                output: { content, filename: outputFileName(form.trimmedValues.hostname) },
+                warnings,
+            };
+        });
     };
 
     const handleReset = () => {
         form.reset();
         setDualLink(false);
         setChoices(INITIAL_CHOICES);
-        setGenerated(null);
-        dismissToast();
-    };
-
-    const sharedFieldProps = {
-        values: form.values,
-        errors: form.errors,
-        onChange: form.setValue,
+        generator.clear();
     };
 
     return (
@@ -237,8 +181,8 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                     onRetry={retry}
                                 />
                                 <FieldGrid
-                                    fields={fieldsIn("device")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("device")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
 
@@ -272,11 +216,11 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                 onDhcpChange={(dhcp) =>
                                     changeDhcp("primary", dhcp)
                                 }
-                                fields={fieldsIn("primary")}
-                                {...sharedFieldProps}
+                                fields={form.fieldsIn("primary")}
+                                {...form.fieldProps}
                             />
 
-                            {dualLink && (
+                            {dualLink ? (
                                 <UplinkSection
                                     role="secondary"
                                     title="Secondary Link"
@@ -292,15 +236,15 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                                     onDhcpChange={(dhcp) =>
                                         changeDhcp("secondary", dhcp)
                                     }
-                                    fields={fieldsIn("secondary")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("secondary")}
+                                    {...form.fieldProps}
                                 />
-                            )}
+                            ) : null}
 
                             <FormSection title="LAN and Loopback">
                                 <FieldGrid
-                                    fields={fieldsIn("network")}
-                                    {...sharedFieldProps}
+                                    fields={form.fieldsIn("network")}
+                                    {...form.fieldProps}
                                 />
                             </FormSection>
                         </Panel>
@@ -308,14 +252,14 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                 }
                 main={
                     <ConfigPreview
-                        filename={generated?.filename ?? outputFileName("")}
-                        content={generated?.content ?? null}
-                        state={previewState}
+                        filename={generator.output?.filename ?? outputFileName("")}
+                        content={generator.output?.content ?? null}
+                        state={generator.state}
                         classifyLine={classifyFortiOSLine}
                     />
                 }
             />
-            <Toast toast={toast} onDismiss={dismissToast} />
+            <Toast toast={generator.toast} onDismiss={generator.dismissToast} />
         </>
     );
 }

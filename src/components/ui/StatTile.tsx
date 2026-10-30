@@ -23,14 +23,14 @@ export function StatTile({ label, value, unit, icon, active = false, accent = "b
             )}
         >
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                {icon && <span className={cn(active && ACCENTS[accent].text)}>{icon}</span>}
+                {icon ? <span className={cn(active && ACCENTS[accent].text)}>{icon}</span> : null}
                 {label}
             </div>
             <p className="mt-3 flex items-baseline gap-1">
                 <span className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
                     {value}
                 </span>
-                {unit && <span className="text-xs text-slate-500 dark:text-slate-400">{unit}</span>}
+                {unit ? <span className="text-xs text-slate-500 dark:text-slate-400">{unit}</span> : null}
             </p>
         </div>
     );
