@@ -50,7 +50,7 @@ export function runTest({ onView, onFail, onFinish }: TestCallbacks): () => void
                 if (snapshot.failed) return fail(SERVER_DOWN);
                 if (Date.now() - startedAt > MAX_TEST_MS) return fail("The speedtest took too long and was stopped.");
 
-                const next = nextView(view, snapshot);
+                const next = nextView(view, snapshot, Date.now());
                 if (next !== view) onView((view = next));
 
                 if (view.stage !== "COMPLETE") return;

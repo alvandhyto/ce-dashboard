@@ -9,8 +9,18 @@ export interface Results {
 
 const EMPTY_RESULTS: Results = { ping: 0, jitter: 0, download: 0, upload: 0 };
 
-/** Speed at which the gauge ring is full. */
-const GAUGE_MAX_MBPS = 600;
+export type Direction = "download" | "upload";
+
+/** One live speed reading: when it was taken (Date.now()) and the speed in Mbps. */
+export interface Sample {
+    at: number;
+    mbps: number;
+}
+
+/** The live readings of each throughput test, oldest first. They draw the graph and set the gauge's scale. */
+export type Samples = Readonly<Record<Direction, readonly Sample[]>>;
+
+const NO_SAMPLES: Samples = { download: [], upload: [] };
 
 export const STAGE_LABEL: Record<Stage, string> = {
     IDLE: "Ready",
@@ -89,9 +99,10 @@ interface EngineView {
 /** Everything the screen shows about a test. */
 export interface SpeedtestView extends EngineView {
     stage: Stage;
+    samples: Samples;
 }
 
-export const IDLE_VIEW: SpeedtestView = { stage: "IDLE", results: EMPTY_RESULTS, value: 0 };
+export const IDLE_VIEW: SpeedtestView = { stage: "IDLE", results: EMPTY_RESULTS, value: 0, samples: NO_SAMPLES };
 export const STARTING_VIEW: SpeedtestView = { ...IDLE_VIEW, stage: "PING" };
 
 /**
@@ -124,26 +135,82 @@ export function viewFromSnapshot(stage: Stage, snap: EngineSnapshot): EngineView
     }
 }
 
-/** The next view from a snapshot. Returns `prev` itself when nothing changed, so a poll with no news renders nothing. */
-export function nextView(prev: SpeedtestView, snap: EngineSnapshot): SpeedtestView {
+/**
+ * Which throughput test is moving data right now, if any. A test's final figure is written
+ * when it ends, after which the engine only winds its own gauge down: that isn't a reading.
+ */
+function measuringDirection(stage: Stage, snap: EngineSnapshot): Direction | null {
+    if (!isMeasuring(snap.status)) return null;
+    if (stage === "DOWNLOAD" && !hasNumber(snap.download)) return "download";
+    if (stage === "UPLOAD" && !hasNumber(snap.upload)) return "upload";
+    return null;
+}
+
+/**
+ * The next view from a snapshot taken at `now` (Date.now()). Returns `prev` itself when
+ * nothing changed, so a poll with no news renders nothing.
+ */
+export function nextView(prev: SpeedtestView, snap: EngineSnapshot, now: number): SpeedtestView {
     const stage = stageFromSnapshot(prev.stage, snap);
     const { results, value } = viewFromSnapshot(stage, snap);
+
+    let samples = prev.samples;
+    const direction = measuringDirection(stage, snap);
+    if (direction && value > 0) {
+        samples = { ...samples, [direction]: [...samples[direction], { at: now, mbps: value }] };
+    }
+
     const same =
         stage === prev.stage &&
         value === prev.value &&
+        samples === prev.samples &&
         results.ping === prev.results.ping &&
         results.jitter === prev.results.jitter &&
         results.download === prev.results.download &&
         results.upload === prev.results.upload;
-    return same ? prev : { stage, results, value };
+    return same ? prev : { stage, results, value, samples };
 }
 
-/** Ring fill, 0 to 100. Only throughput stages fill the ring; latency is in ms and has no natural scale. */
-export function gaugeProgress(stage: Stage, value: number): number {
-    if (stage !== "DOWNLOAD" && stage !== "UPLOAD" && stage !== "COMPLETE") return 0;
-    return Math.min(100, Math.max(0, (value / GAUGE_MAX_MBPS) * 100));
+/** Round scale ends per decade. Close together, so the arc ends up between about 65% and 90% full. */
+const SCALE_STEPS = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8];
+
+/**
+ * The smallest round number above `mbps` with some headroom, so the arc never sits pinned at
+ * its end. Fed the highest speed seen so far, it only ever grows during a test. 10 Mbps at least.
+ */
+export function scaleMax(mbps: number): number {
+    const needed = Math.max(10, mbps * 1.1);
+    const decade = 10 ** Math.floor(Math.log10(needed));
+    const step = SCALE_STEPS.find((s) => s * decade >= needed) ?? 10;
+    return step * decade;
 }
+
+export const peakOf = (samples: readonly Sample[]) =>
+    samples.reduce((peak, sample) => Math.max(peak, sample.mbps), 0);
+
+/** From 1 Gbps up, speeds read better in Gbps. Decided by the scale, so a whole scale shares one unit. */
+export type SpeedUnit = "Gbps" | "Mbps";
+
+export const speedUnit = (scale: number): SpeedUnit => (scale >= 1_000 ? "Gbps" : "Mbps");
+
+/** A speed in the given unit: Mbps whole from 10 up, Gbps with two decimals (one from 10 Gbps). */
+export function formatSpeed(mbps: number, unit: SpeedUnit): string {
+    if (unit === "Mbps") return mbps >= 10 ? String(Math.floor(mbps)) : mbps.toFixed(1);
+    const gbps = mbps / 1_000;
+    return gbps.toFixed(gbps >= 10 ? 1 : 2);
+}
+
+/** A scale mark without trailing zeros: 12.5, 250, 2.5. */
+export const formatScale = (mbps: number, unit: SpeedUnit) =>
+    String(Number((unit === "Gbps" ? mbps / 1_000 : mbps).toFixed(2)));
 
 export const isRunning = (stage: Stage) => stage !== "IDLE" && stage !== "COMPLETE";
 
 export const formatMetric = (value: number) => (value > 0 ? value.toFixed(1) : "0.0");
+
+/** A result tile's speed: Gbps with two decimals from 1000 Mbps up, so a fast link doesn't print six digits. */
+export function formatThroughput(mbps: number): { value: string; unit: SpeedUnit } {
+    return mbps >= 1_000
+        ? { value: (mbps / 1_000).toFixed(2), unit: "Gbps" }
+        : { value: formatMetric(mbps), unit: "Mbps" };
+}
