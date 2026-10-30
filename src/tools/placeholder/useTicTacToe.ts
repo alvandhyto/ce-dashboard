@@ -4,7 +4,7 @@ import { emptyBoard, getOutcome, pickAiMove, type Board, type Mark, type Outcome
 export type Phase = "idle" | "playing" | "over";
 type Turn = "player" | "ai";
 
-export interface GameState {
+interface GameState {
     phase: Phase;
     board: Board;
     turn: Turn;
@@ -12,12 +12,12 @@ export interface GameState {
     score: { player: number; ai: number };
 }
 
-export type GameAction =
+type GameAction =
     | { type: "start" }
     | { type: "play"; index: number }
     | { type: "aiPlay"; index: number };
 
-export const INITIAL_STATE: GameState = {
+const INITIAL_STATE: GameState = {
     phase: "idle",
     board: emptyBoard(),
     turn: "player",
@@ -48,7 +48,7 @@ function place(state: GameState, index: number, mark: Mark): GameState {
     };
 }
 
-export function gameReducer(state: GameState, action: GameAction): GameState {
+function gameReducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
         case "start":
             return { ...state, phase: "playing", board: emptyBoard(), turn: "player", outcome: null };

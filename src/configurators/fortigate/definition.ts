@@ -95,7 +95,7 @@ export interface Uplink {
 export type Uplinks = Record<UplinkRole, Uplink>;
 
 /** Last resort when a template says nothing about where its uplinks sit. */
-export const DEFAULT_UPLINKS: Uplinks = {
+const DEFAULT_UPLINKS: Uplinks = {
     primary: { interface: "wan", dhcp: false },
     secondary: { interface: "a", dhcp: false },
 };
@@ -206,7 +206,7 @@ export interface FortigateOptions {
 }
 
 /** LAN address with prefix length. Used when the LAN field is left empty. */
-export const DEFAULT_LAN_CIDR = "192.168.1.99/24";
+const DEFAULT_LAN_CIDR = "192.168.1.99/24";
 const UNUSED_IP = "0.0.0.0";
 
 export const INITIAL_VALUES: FortigateValues = {

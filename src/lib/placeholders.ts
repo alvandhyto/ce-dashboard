@@ -1,7 +1,7 @@
 export type Replacements = Record<string, string>;
 
 /** Matches placeholders shaped like [HOSTNAME] or [ip_primary]. */
-export const BRACKET_PLACEHOLDER = /\[[A-Za-z][A-Za-z0-9_]*\]/g;
+const BRACKET_PLACEHOLDER = /\[[A-Za-z][A-Za-z0-9_]*\]/g;
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

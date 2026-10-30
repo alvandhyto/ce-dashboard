@@ -23,7 +23,7 @@ Everything shares one design system and one registry, so adding a new tool or ge
 
 | Tool            | What it does                                                                                                                                 |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Speedtest**   | Measures latency, jitter, download and upload with a live gauge. Built on the [LibreSpeed](https://github.com/librespeed/speedtest/) engine. |
+| **Speedtest**   | Measures latency, jitter, download and upload with a live gauge. Built on the [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test) engine. |
 | **Generators**  | Menu of configuration generators, behind an access key. Currently: **FortiGate** (30G and 40F, FortiOS 7.2 and 7.4, single or dual link).    |
 | **Placeholder** | Tic-tac-toe against the computer. A slot for whatever comes next.                                                                            |
 
@@ -67,7 +67,7 @@ The app loads these at runtime. If one is missing, the matching feature shows an
 | ------------------------------------------------------- | --------------------------------- |
 | `icons/fortilogo.ico`                                   | FortiGate card and header         |
 | `icons/lintaslogo.png`                                  | Speedtest header                  |
-| `speedtest_worker.js`                                   | Speedtest (the LibreSpeed worker) |
+| `openspeedtest/` (`index.html`, `app-2.5.4.js`)         | Speedtest (the OpenSpeedTest engine) |
 | `templates/fortigate/Template <series> <firmware>.conf` | FortiGate generator               |
 
 FortiGate templates are named after the model and firmware chosen in the form, for example:
@@ -79,7 +79,7 @@ public/templates/fortigate/Template 40F 7.2.conf
 public/templates/fortigate/Template 40F 7.4.conf
 ```
 
-The speedtest worker talks to a LibreSpeed backend. Its endpoints and options are configured through the worker and the engine's `setParameter`; see the LibreSpeed documentation for what the backend needs to serve.
+The speedtest engine needs two endpoints next to its page: `GET /openspeedtest/downloading` (a large random body) and `POST /openspeedtest/upload` (read and discarded; a `GET` answers the pings). `server/openSpeedTest.ts` provides them, in `server.ts` for `npm run dev` and production, and through a Vite plugin for `vite` and `npm run preview`. A plain static host that falls back to `index.html` doesn't serve them, and the results are then meaningless. After editing the engine page or updating the script, run `npx tsx scripts/verify-openspeedtest.ts`.
 
 ## Project structure
 
@@ -97,8 +97,8 @@ src/
 ├── pages/                    DashboardPage, GeneratorsPage, AccessGatePage
 │
 ├── tools/                    Standalone tools
-│   ├── speedtest/            config.ts, latencyStats.ts, measureLatency.ts, model.ts, useSpeedtest.ts,
-│   │                         SpeedGauge, SpeedtestApp, speedtest.ts (LibreSpeed engine)
+│   ├── speedtest/            config.ts, model.ts, engineFrame.ts, readSnapshot.ts, runTest.ts,
+│   │                         useSpeedtest.ts, SpeedGauge, SpeedtestApp
 │   └── placeholder/          tictactoe.ts, useTicTacToe.ts, Board, PlaceholderApp
 │
 ├── configurators/            Configuration generators, one folder per vendor
@@ -262,6 +262,6 @@ If the templates or generated configs are sensitive, enforce access on the serve
 
 ## License and credits
 
-- The speedtest engine in `src/tools/speedtest/speedtest.ts` is adapted from [LibreSpeed](https://github.com/librespeed/speedtest/) by Federico Dossena, licensed under the GNU LGPL v3.
+- The speedtest engine in `public/openspeedtest/app-2.5.4.js` is [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test) by Vishnu, MIT license, used unmodified.
 - Developed by AVU.
 - This repository does not declare its own license yet. Add a `LICENSE` file before sharing it outside the team.

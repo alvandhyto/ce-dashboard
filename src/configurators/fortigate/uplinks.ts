@@ -41,7 +41,7 @@ export interface UplinkDefaults {
     allowaccess?: string;
 }
 
-export interface UplinkPlan {
+interface UplinkPlan {
     /** Interface the uplink should end up on, e.g. "lan1". */
     interface: string;
     dhcp: boolean;

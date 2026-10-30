@@ -5,6 +5,12 @@
  *
  * A plain fill-in generator: the templates are complete and only values change.
  */
+import {
+    getNetworkAddress,
+    getSubnet,
+    parseCidr,
+    type Subnet,
+} from "../../lib/cidr";
 import type { Replacements } from "../../lib/placeholders";
 import { rules, type FieldDef } from "../../lib/validation";
 // Existing helper from the project.
@@ -71,6 +77,14 @@ export const INITIAL_VALUES: ChatimeValues = {
     loopback205: "",
 };
 
+/**
+ * Address with prefix length, e.g. 123.231.211.162/30. Any address inside the
+ * subnet is accepted, including its network and broadcast address, because
+ * the template decides which one to use. Pass `requireHost: true` to
+ * rules.cidr to reject those two again.
+ */
+const ipWithPrefix = (example: string) => rules.cidr({ example });
+
 /** SIDs go into the config unquoted, so no spaces or quotes. */
 const sidRules = [
     rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
@@ -130,17 +144,17 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
         key: "ip_ptp",
         group: "network",
         label: "PTP IP",
-        placeholder: "e.g. 192.168.205.136",
+        placeholder: "e.g. 192.168.205.136/30",
         required: true,
-        rules: [rules.ipv4()],
+        rules: [ipWithPrefix("192.168.205.136/30")],
     },
     {
         key: "ip_lan",
         group: "network",
         label: "LAN IP",
-        placeholder: "e.g. 172.19.31.208",
+        placeholder: "e.g. 172.19.31.208/28",
         required: true,
-        rules: [rules.ipv4()],
+        rules: [ipWithPrefix("172.19.31.208/28")],
     },
     {
         key: "loopback205",
