@@ -13,8 +13,8 @@ const DIRECTIONS: readonly Direction[] = ["download", "upload"];
 
 const HEIGHT = 160;
 const PAD = { top: 10, right: 12, bottom: 22, left: 40 };
-/** The engine measures each direction for about 12 s; the axis starts there and grows if a test runs longer. */
-const MIN_SECONDS = 12;
+/** Each test runs 15 s (public/openspeedtest/index.html). The axis stops there and later readings are left out, so both lines end together. */
+const SECONDS = 15;
 
 /** Seconds since the first reading of the same test, so both tests start at 0 and line up. */
 const secondsOf = (samples: readonly Sample[], sample: Sample) => (sample.at - samples[0].at) / 1000;
@@ -46,7 +46,11 @@ function useWidth() {
 }
 
 /** Download and upload speed over time, on one shared Mbps axis. */
-export const SpeedChart = memo(function SpeedChart({ samples, live }: SpeedChartProps) {
+/** The readings within the first SECONDS of their test. */
+const clip = (samples: readonly Sample[]) => samples.filter((sample) => secondsOf(samples, sample) <= SECONDS);
+
+export const SpeedChart = memo(function SpeedChart({ samples: all, live }: SpeedChartProps) {
+    const samples = useMemo(() => ({ download: clip(all.download), upload: clip(all.upload) }), [all]);
     const [plotRef, width] = useWidth();
     const [hoverT, setHoverT] = useState<number | null>(null);
 
@@ -54,10 +58,7 @@ export const SpeedChart = memo(function SpeedChart({ samples, live }: SpeedChart
         const peak = Math.max(peakOf(samples.download), peakOf(samples.upload));
         const yMax = scaleMax(peak);
         const unit = speedUnit(yMax);
-        const longest = Math.max(
-            ...DIRECTIONS.map((d) => (samples[d].length > 1 ? secondsOf(samples[d], samples[d].at(-1)!) : 0)),
-        );
-        const xMax = Math.max(MIN_SECONDS, Math.ceil(longest));
+        const xMax = SECONDS;
 
         const plotWidth = Math.max(0, width - PAD.left - PAD.right);
         const plotHeight = HEIGHT - PAD.top - PAD.bottom;
@@ -78,8 +79,7 @@ export const SpeedChart = memo(function SpeedChart({ samples, live }: SpeedChart
             };
         });
 
-        const xStep = xMax <= 15 ? 3 : 5;
-        const xTicks = Array.from({ length: Math.floor(xMax / xStep) + 1 }, (_, i) => i * xStep);
+        const xTicks = [0, 3, 6, 9, 12, 15];
         // Empty, the graph is just its baseline: gridlines without data would cross the placeholder text.
         const yTicks = peak > 0 ? [0, yMax / 2, yMax] : [0];
 
