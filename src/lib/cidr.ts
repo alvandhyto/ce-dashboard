@@ -1,4 +1,4 @@
-import { isValidIPv4 } from "./ip";
+import { intToIp, ipToInt, isValidIPv4 } from "./ip";
 
 /** An IPv4 address together with its prefix length, e.g. 192.168.1.99/24. */
 export interface Cidr {
@@ -26,21 +26,6 @@ export interface Subnet {
 
 /** No leading zeros, so "/030" and "/08" are rejected instead of guessed at. */
 const PREFIX_PATTERN = /^(0|[1-9]\d?)$/;
-
-/** Dotted quad to unsigned 32-bit integer. Expects a valid IPv4 address. */
-function ipToInt(ip: string): number {
-    const [a, b, c, d] = ip.split(".").map(Number);
-    return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0;
-}
-
-function intToIp(value: number): string {
-    return [
-        value >>> 24,
-        (value >>> 16) & 255,
-        (value >>> 8) & 255,
-        value & 255,
-    ].join(".");
-}
 
 /** /24 becomes 0xFFFFFF00. The /0 case is special because JS shifts wrap around at 32. */
 function prefixToMask(prefix: number): number {

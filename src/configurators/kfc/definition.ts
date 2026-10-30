@@ -9,7 +9,7 @@
 import type { Replacements } from "../../lib/placeholders";
 import { rules, type FieldDef } from "../../lib/validation";
 // Existing helpers from the project.
-import { getFirstThreeOctets, subtractOneFromIP } from "../../utils";
+import { getFirstThreeOctets, subtractOneFromIP } from "../../lib/ip";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */
