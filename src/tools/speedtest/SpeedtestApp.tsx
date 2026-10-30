@@ -7,22 +7,90 @@ import { containerClass } from "../../components/layout/container";
 import { Button } from "../../components/ui/Button";
 import { StatTile } from "../../components/ui/StatTile";
 import { cn } from "../../lib/cn";
-import { formatMetric, gaugeProgress, STAGE_LABEL, type Results, type Stage } from "./model";
+import type { Accent } from "../../lib/accent";
+import {
+    formatMetric,
+    formatThroughput,
+    formatScale,
+    formatSpeed,
+    peakOf,
+    scaleMax,
+    speedUnit,
+    STAGE_LABEL,
+    type Direction,
+    type Results,
+    type SpeedtestView,
+    type Stage,
+} from "./model";
+import { SERIES } from "./series";
+import { SpeedChart } from "./SpeedChart";
 import { SpeedGauge } from "./SpeedGauge";
 import { useSpeedtest } from "./useSpeedtest";
 
 /** The four result tiles. Static, so they are built once and not on every poll. */
-const TILES: ReadonlyArray<{ key: keyof Results; label: string; unit: string; icon: ReactNode; stage: Stage }> = [
-    { key: "ping", label: "Latency", unit: "ms", icon: <Clock className="h-4 w-4" />, stage: "PING" },
-    { key: "jitter", label: "Jitter", unit: "ms", icon: <Activity className="h-4 w-4" />, stage: "PING" },
-    { key: "download", label: "Download", unit: "mbps", icon: <Download className="h-4 w-4" />, stage: "DOWNLOAD" },
-    { key: "upload", label: "Upload", unit: "mbps", icon: <Upload className="h-4 w-4" />, stage: "UPLOAD" },
+const TILES: ReadonlyArray<{
+    key: keyof Results;
+    label: string;
+    unit: string;
+    icon: ReactNode;
+    stage: Stage;
+    accent: Accent;
+}> = [
+    { key: "ping", label: "Latency", unit: "ms", icon: <Clock className="h-4 w-4" />, stage: "PING", accent: "blue" },
+    { key: "jitter", label: "Jitter", unit: "ms", icon: <Activity className="h-4 w-4" />, stage: "PING", accent: "blue" },
+    {
+        key: "download",
+        label: "Download",
+        unit: "Mbps",
+        icon: <Download className="h-4 w-4" />,
+        stage: "DOWNLOAD",
+        accent: SERIES.download.accent,
+    },
+    {
+        key: "upload",
+        label: "Upload",
+        unit: "Mbps",
+        icon: <Upload className="h-4 w-4" />,
+        stage: "UPLOAD",
+        accent: SERIES.upload.accent,
+    },
 ];
+
+/** Latency and jitter in ms as they are; speeds switch to Gbps from 1000 Mbps. */
+const tileValue = (key: keyof Results, value: number, unit: string) =>
+    key === "download" || key === "upload" ? formatThroughput(value) : { value: formatMetric(value), unit };
+
+/** The throughput test a stage shows on the gauge: the one running, or the last one once done. */
+const directionOf = (stage: Stage): Direction | null =>
+    stage === "DOWNLOAD" ? "download" : stage === "UPLOAD" || stage === "COMPLETE" ? "upload" : null;
+
+/** What the gauge shows. Throughput gets a scale that grows with the fastest reading of its test. */
+function gaugeFor({ stage, value, samples }: SpeedtestView) {
+    const caption = STAGE_LABEL[stage];
+    const direction = directionOf(stage);
+    if (!direction) {
+        return stage === "PING"
+            ? { caption, value: value.toFixed(1), unit: "ms", progress: 0 }
+            : { caption, value: "0", unit: "Mbps", progress: 0 };
+    }
+    const scale = scaleMax(Math.max(peakOf(samples[direction]), value));
+    const unit = speedUnit(scale);
+    return {
+        caption,
+        value: formatSpeed(value, unit),
+        unit,
+        progress: value / scale,
+        scaleEnd: formatScale(scale, unit),
+        stroke: SERIES[direction].stroke,
+    };
+}
 
 const HEADER_ICON = <img src="/icons/lintaslogo.png" alt="" className="h-8 w-8 shrink-0" />;
 
 export default function SpeedtestApp({ onBack }: AppProps) {
-    const { stage, results, value, running, warning, start, abort } = useSpeedtest();
+    const { running, warning, start, abort, ...view } = useSpeedtest();
+    const { stage, results, samples } = view;
+    const live = stage === "DOWNLOAD" || stage === "UPLOAD" ? directionOf(stage) : null;
 
     return (
         <AppShell>
@@ -40,26 +108,22 @@ export default function SpeedtestApp({ onBack }: AppProps) {
                     "flex flex-1 flex-col items-center gap-8 justify-center",
                 )}
             >
-                <SpeedGauge
-                    value={value}
-                    unit={stage === "PING" ? "ms" : "Mbps"}
-                    caption={STAGE_LABEL[stage]}
-                    progress={gaugeProgress(stage, value)}
-                    decimals={stage === "PING" ? 1 : 0}
-                />
+                <SpeedGauge {...gaugeFor(view)} />
 
                 <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
                     {TILES.map((tile) => (
                         <StatTile
                             key={tile.key}
                             label={tile.label}
-                            value={formatMetric(results[tile.key])}
-                            unit={tile.unit}
+                            {...tileValue(tile.key, results[tile.key], tile.unit)}
                             icon={tile.icon}
                             active={stage === tile.stage}
+                            accent={tile.accent}
                         />
                     ))}
                 </div>
+
+                <SpeedChart samples={samples} live={live} />
 
                 {warning ? (
                     <p
