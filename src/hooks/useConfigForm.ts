@@ -34,6 +34,11 @@ export function useConfigForm<K extends string, C>({
     const visibleFields = getVisibleFields(fields, context);
     const errors: FieldErrors<K> = showErrors ? validateFields(fields, values, context) : {};
     const trimmedValues = useMemo(() => trimValues(values), [values]);
+    /** True once anything differs from the initial values, i.e. leaving would lose typing. */
+    const dirty = useMemo(
+        () => (Object.keys(values) as K[]).some((key) => values[key] !== initialValues[key]),
+        [values, initialValues],
+    );
 
     const setValue = useCallback((key: K, value: string) => {
         setValues((prev) => ({ ...prev, [key]: value }) as Record<K, string>);
@@ -64,7 +69,7 @@ export function useConfigForm<K extends string, C>({
     /** What every FieldGrid needs besides its fields. */
     const fieldProps = { values, errors, onChange: setValue };
 
-    return { values, trimmedValues, errors, visibleFields, fieldsIn, fieldProps, setValue, validate, reset };
+    return { values, trimmedValues, dirty, errors, visibleFields, fieldsIn, fieldProps, setValue, validate, reset };
 }
 
 function trimValues<K extends string>(values: Record<K, string>): Record<K, string> {

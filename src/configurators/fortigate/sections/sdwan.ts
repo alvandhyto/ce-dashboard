@@ -4,7 +4,7 @@
  * The zone, health check, rules and the default route through the zone are the template's.
  * Members the template has of its own stay, and ours are numbered after them.
  */
-import { editName, findConfig, isEdit, newEdit, readSet, type ConfigNode, type Document } from "../fortios";
+import { editName, findConfig, isEdit, newEdit, quote, readSet, type ConfigNode, type Document } from "../fortios";
 import type { SitePlan } from "../plan";
 
 /** FortiOS's built-in zone, there in every config; never the one the templates route through. */
@@ -29,8 +29,8 @@ export function applySdwan(doc: Document, plan: SitePlan): void {
     for (const uplink of plan.uplinks) {
         members.children.push(
             newEdit(String(++id), [
-                ["interface", `"${uplink.port}"`],
-                ["zone", `"${zone}"`],
+                ["interface", quote(uplink.port)],
+                ["zone", quote(zone)],
                 ...(uplink.addressing.kind === "static" ? [["gateway", uplink.addressing.gateway] as const] : []),
             ]),
         );

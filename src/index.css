@@ -9,6 +9,19 @@
     }
     body {
         @apply bg-slate-50 dark:bg-[#0F1218];
+        /* No double-tap zoom delay on touch screens; focus rings replace the grey tap flash. */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    /* Focused only by the skip link, which is itself the visible cue; no ring around the whole page. */
+    main:focus {
+        outline: none;
+    }
+    /* Safari's Caps Lock arrow in password fields stretches to the input's full height; keep it icon-sized. */
+    input::-webkit-caps-lock-indicator {
+        align-self: center;
+        width: 1rem;
+        height: 1rem;
     }
 }
 

@@ -8,7 +8,7 @@
  */
 import { getSubnet, isUsableHost } from "../../lib/cidr";
 import type { Replacements } from "../../lib/placeholders";
-import { rules, type FieldDef, type Rule } from "../../lib/validation";
+import { hostnameRules, rules, sidRules, type FieldDef, type Rule } from "../../lib/validation";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */
@@ -91,20 +91,6 @@ export const INITIAL_VALUES: KfcValues = {
     loopback0: "",
     loopback205: "",
 };
-
-// FortiOS: up to 35 characters; letters, digits, hyphen and underscore only.
-const hostnameRules = [
-    rules.maxLength(35),
-    rules.pattern(
-        /^[A-Za-z0-9_-]+$/,
-        "Use letters, numbers, hyphens and underscores only.",
-    ),
-];
-
-/** Goes into `set alias "<SID>_DEDICATED"`, so no quotes, and no spaces either. */
-const sidRules = [
-    rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
-];
 
 /**
  * Prefix lengths the templates are written for: `set ip [IP_INTERNET] 255.255.255.248`,

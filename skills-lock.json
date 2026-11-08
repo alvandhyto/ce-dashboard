@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "fortinet-sdwan": {
+      "source": "chrishuffman5/domain-expert",
+      "sourceType": "github",
+      "skillPath": "plugins/networking/skills/fortinet-sdwan/SKILL.md",
+      "computedHash": "9c4799a4259f3b6a73a88865ad8e5bab35a30db582632d5e8be0daec6d930077"
+    },
+    "no-ai-slop": {
+      "source": "petergyang/no-ai-slop",
+      "sourceType": "github",
+      "skillPath": "skills/no-ai-slop/SKILL.md",
+      "computedHash": "77d287e3c8e09874e144ee35f6fb0ee1adcf609012c7c3273e9c8fe2054ce5af"
+    }
+  }
+}

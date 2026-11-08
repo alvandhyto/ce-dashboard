@@ -5,7 +5,7 @@
  * To support another vendor, copy this file and change the data, not the components.
  */
 import { parseCidr } from "../../lib/cidr";
-import { rules, type FieldDef, type Rule } from "../../lib/validation";
+import { hostnameRules, rules, sidRules, type FieldDef, type Rule } from "../../lib/validation";
 
 /* ------------------------------------------------------------------ */
 /* Models and firmware                                                  */
@@ -49,7 +49,6 @@ export const outputFileName = (hostname: string) =>
 /* ------------------------------------------------------------------ */
 
 /**
-
  * Which interfaces count as ports an uplink can use. The list itself is read
  * from the selected template (see inspectTemplate): `edit` blocks under
  * `config system interface` with `set type physical` whose name matches this.
@@ -226,11 +225,6 @@ const linkRules = (example: string) => [
     largestPrefix(31, "A link needs a /31 or larger subnet: one address for the provider, one for the FortiGate."),
 ];
 
-/** The SID goes into `set alias` unquoted, so it can't hold spaces or quotes. */
-const sidRules = [
-    rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
-];
-
 /** Order here is the order on screen within each group. */
 export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
     [
@@ -241,14 +235,7 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
             placeholder: "e.g. 2026504937_KFC_KGD-BOULEVARD",
             span: "full",
             required: true,
-            // FortiOS: up to 35 characters; letters, digits, hyphen and underscore only.
-            rules: [
-                rules.maxLength(35),
-                rules.pattern(
-                    /^[A-Za-z0-9_-]+$/,
-                    "Use letters, numbers, hyphens and underscores only.",
-                ),
-            ],
+            rules: hostnameRules,
         },
         {
             key: "sid_primary",

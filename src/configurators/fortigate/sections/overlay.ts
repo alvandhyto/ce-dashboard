@@ -20,12 +20,11 @@ import {
     findEdit,
     isConfig,
     isEdit,
-    isSet,
     newConfig,
     newEdit,
+    quote,
+    readSet,
     removeNode,
-    unquote,
-    valueOf,
     type ConfigNode,
     type Document,
 } from "../fortios";
@@ -74,8 +73,6 @@ const BGP_SECTION = "router bgp";
 
 /** The order FortiOS needs them in: tunnels are defined before the policy that uses them. */
 const SECTION_ORDER = [INTERFACES, PHASE1, PHASE2, POLICIES];
-
-const quote = (value: string) => `"${value}"`;
 
 /* ------------------------------------------------------------------ */
 /* What gets written                                                    */
@@ -221,8 +218,7 @@ function removeExisting(doc: Document): number {
 
     const policies = findConfig(doc, POLICIES);
     for (const edit of policies?.children.filter(isEdit) ?? []) {
-        const name = edit.children.find((node) => isSet(node, "name"));
-        if (name && isSet(name) && unquote(valueOf(name)) === POLICY.name) {
+        if (readSet(edit, "name") === POLICY.name) {
             removeNode(policies!, edit);
             removed++;
         }
@@ -245,8 +241,7 @@ function removeExisting(doc: Document): number {
 function highestSnmpIndex(interfaces: ConfigNode): number {
     const used = interfaces.children
         .filter(isEdit)
-        .flatMap((edit) => edit.children.filter((node) => isSet(node, "snmp-index")))
-        .map((node) => (isSet(node) ? Number(valueOf(node)) : NaN))
+        .map((edit) => Number(readSet(edit, "snmp-index")))
         .filter(Number.isFinite);
     return Math.max(0, ...used);
 }
