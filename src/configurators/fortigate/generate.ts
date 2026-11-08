@@ -7,13 +7,15 @@
  *   [IP_LOOPBACK205].
  * - Code adds what depends on the form (sections/): the uplinks on their ports, an SD-WAN
  *   member per uplink, and the management tunnels with their BGP neighbors, each into a list
- *   the template leaves empty. The LAN's values are written into the places that name its
+ *   the template leaves empty. With custom BGP on, the router AS, provider neighbors and the
+ *   prefixes they advertise (sections/bgp.ts). The LAN's values are written into the places that name its
  *   subnet. A port taken out of the LAN switch for an uplink is the one thing removed.
  */
 import { buildPlan } from "./plan";
 import { DEFAULT_UPLINKS, PORT_NAME_PATTERN, type FortigateOptions, type FortigateValues } from "./definition";
 import { parseFortiOS, serializeFortiOS, type Document } from "./fortios";
 import { findUnresolvedPlaceholders, renderTemplate } from "../../lib/placeholders";
+import { applyCustomBgp } from "./sections/bgp";
 import { applyLan } from "./sections/lan";
 import { applyOverlay } from "./sections/overlay";
 import { applySdwan } from "./sections/sdwan";
@@ -70,7 +72,8 @@ export function generateConfig(template: string, values: FortigateValues, option
     applyUplinks(doc, plan);
     applyLan(doc, plan);
     applySdwan(doc, plan);
-    const warnings = applyOverlay(doc, plan);
+    // After the overlay, so the hub neighbors come first and the custom ones follow, as in the samples.
+    const warnings = [...applyOverlay(doc, plan), ...applyCustomBgp(doc, plan)];
 
     const content = serializeFortiOS(doc);
     const unresolved = findUnresolvedPlaceholders(content);

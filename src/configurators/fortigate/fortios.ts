@@ -208,6 +208,22 @@ export const newSet = (key: string, value: string): SetNode => ({
     text: `set ${key} ${value}`,
 });
 
+export const newUnset = (key: string): SetNode => ({
+    kind: "set",
+    verb: "unset",
+    key,
+    text: `unset ${key}`,
+});
+
+/** True when `unset <key>` appears anywhere under `node`: tells how a template's FortiOS version exports a block. */
+export function hasUnset(node: Container, key: string): boolean {
+    return node.children.some(
+        (child) =>
+            (child.kind === "set" && child.verb === "unset" && child.key === key) ||
+            ((child.kind === "config" || child.kind === "edit") && hasUnset(child, key)),
+    );
+}
+
 /** A new `edit` block from key/value pairs. The name is written as given, so pass `"wan"` quoted. */
 export const newEdit = (
     name: string,

@@ -20,21 +20,28 @@ import {
     FIELDS,
     FIRMWARE_OPTIONS,
     INITIAL_CHOICES,
+    INITIAL_NEIGHBORS,
     INITIAL_VALUES,
     SERIES_OPTIONS,
     assignDhcp,
     assignInterface,
+    neighborFieldId,
+    newNeighbor,
     outputFileName,
     resolveUplinks,
     templateFileName,
     templateUrl,
+    validateNeighbors,
+    type BgpNeighbor,
     type FirmwareVersion,
+    type NeighborErrors,
     type FortigateOptions,
     type Series,
     type UplinkChoices,
     type UplinkRole,
 } from "./definition";
 import { generateConfig, inspectTemplate } from "./generate";
+import { BgpSection } from "./BgpSection";
 import { UplinkSection } from "./UplinkSection";
 
 interface GeneratedConfig {
@@ -44,12 +51,16 @@ interface GeneratedConfig {
 
 /** Hoisted so the uplinks memo below doesn't see a new object on every render while loading. */
 const NO_DEFAULTS = {};
+const NO_NEIGHBOR_ERRORS: NeighborErrors = {};
 
 export default function FortigateConfigurator({ onBack }: AppProps) {
     const [series, setSeries] = useState<Series>(DEFAULT_SERIES);
     const [firmware, setFirmware] = useState<FirmwareVersion>(DEFAULT_FIRMWARE);
     const [dualLink, setDualLink] = useState(false);
     const [choices, setChoices] = useState<UplinkChoices>(INITIAL_CHOICES);
+    const [customBgp, setCustomBgp] = useState(false);
+    const [neighbors, setNeighbors] = useState<readonly BgpNeighbor[]>(INITIAL_NEIGHBORS);
+    const [showNeighborErrors, setShowNeighborErrors] = useState(false);
 
     const { status: templateStatus, template, error: templateError, retry } = useTemplates([
         templateUrl(series, firmware),
@@ -65,16 +76,53 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         [choices, ports, layout],
     );
 
-    const options = useMemo<FortigateOptions>(() => ({ dualLink, uplinks }), [dualLink, uplinks]);
+    const options = useMemo<FortigateOptions>(
+        () => ({ dualLink, uplinks, customBgp, neighbors }),
+        [dualLink, uplinks, customBgp, neighbors],
+    );
     const form = useConfigForm({ initialValues: INITIAL_VALUES, fields: FIELDS, context: options });
     const generator = useGenerator<GeneratedConfig>({ series, firmware, options, values: form.trimmedValues });
+
+    // Like the form, neighbor errors show after the first Generate and then follow the typing.
+    const neighborErrors: NeighborErrors =
+        customBgp && showNeighborErrors ? validateNeighbors(neighbors, form.values.bgp_as) : NO_NEIGHBOR_ERRORS;
 
     // Picking a port pins both uplinks, so a later template switch can't move the other one.
     const changeInterface = (role: UplinkRole, next: string) => setChoices(assignInterface(uplinks, role, next));
     const changeDhcp = (role: UplinkRole, dhcp: boolean) => setChoices((current) => assignDhcp(current, role, dhcp));
 
+    const changeNeighbor = (id: number, patch: Partial<Omit<BgpNeighbor, "id">>) =>
+        setNeighbors((current) => current.map((neighbor) => (neighbor.id === id ? { ...neighbor, ...patch } : neighbor)));
+    // A new peer is a backup once there is a main one, since a second main is the rarer case.
+    const addNeighbor = () =>
+        setNeighbors((current) => [
+            ...current,
+            newNeighbor(
+                Math.max(0, ...current.map((neighbor) => neighbor.id)) + 1,
+                current.some((neighbor) => neighbor.role === "main") ? "backup" : "main",
+            ),
+        ]);
+    const removeNeighbor = (id: number) => setNeighbors((current) => current.filter((neighbor) => neighbor.id !== id));
+
+    /** True when every neighbor is usable; otherwise shows the errors and focuses the first one. */
+    const validateBgp = (focus: boolean): boolean => {
+        if (!customBgp) return true;
+        setShowNeighborErrors(true);
+        const errors = validateNeighbors(neighbors, form.values.bgp_as);
+        const first = neighbors.find((neighbor) => errors[neighbor.id]);
+        if (first && focus) {
+            const field = errors[first.id].ip ? "ip" : "remoteAs";
+            requestAnimationFrame(() => document.getElementById(neighborFieldId(first.id, field))?.focus());
+        }
+        return !first;
+    };
+
     const handleGenerate = () => {
-        if (!template || !form.validate()) return;
+        if (!template) return;
+        const formOk = form.validate();
+        // The form focuses its own first error; the neighbors only when the form is fine.
+        const bgpOk = validateBgp(formOk);
+        if (!formOk || !bgpOk) return;
         generator.run(() => {
             const { content, warnings } = generateConfig(template, form.trimmedValues, options);
             return { output: { content, filename: outputFileName(form.trimmedValues.hostname) }, warnings };
@@ -85,6 +133,9 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
         form.reset();
         setDualLink(false);
         setChoices(INITIAL_CHOICES);
+        setCustomBgp(false);
+        setNeighbors(INITIAL_NEIGHBORS);
+        setShowNeighborErrors(false);
         generator.clear();
     };
 
@@ -95,7 +146,7 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
             logo="/icons/fortilogo.ico"
             onBack={onBack}
             onReset={handleReset}
-            dirty={form.dirty}
+            dirty={form.dirty || neighbors !== INITIAL_NEIGHBORS}
             onGenerate={handleGenerate}
             ready={templateStatus === "ready"}
             toast={generator.toast}
@@ -135,13 +186,19 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
                 <FieldGrid fields={form.fieldsIn("device")} {...form.fieldProps} />
             </FormSection>
 
-            <FormSection title="Link Setup">
+            <FormSection title="Options">
                 <div className="grid grid-cols-2 gap-3">
                     <ToggleCard
                         label="Dual Link"
                         description="Adds a secondary link"
                         checked={dualLink}
                         onChange={setDualLink}
+                    />
+                    <ToggleCard
+                        label="Custom BGP"
+                        description="Peers with the customer's providers"
+                        checked={customBgp}
+                        onChange={setCustomBgp}
                     />
                 </div>
             </FormSection>
@@ -175,6 +232,18 @@ export default function FortigateConfigurator({ onBack }: AppProps) {
             <FormSection title="LAN and Loopback">
                 <FieldGrid fields={form.fieldsIn("network")} {...form.fieldProps} />
             </FormSection>
+
+            {customBgp ? (
+                <BgpSection
+                    fields={form.fieldsIn("bgp")}
+                    {...form.fieldProps}
+                    neighbors={neighbors}
+                    neighborErrors={neighborErrors}
+                    onNeighborChange={changeNeighbor}
+                    onAddNeighbor={addNeighbor}
+                    onRemoveNeighbor={removeNeighbor}
+                />
+            ) : null}
         </ConfiguratorLayout>
     );
 }

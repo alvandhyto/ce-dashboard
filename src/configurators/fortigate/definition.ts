@@ -4,7 +4,7 @@
  *
  * To support another vendor, copy this file and change the data, not the components.
  */
-import { parseCidr } from "../../lib/cidr";
+import { getSubnet, isValidIPv4, parseCidr } from "../../lib/cidr";
 import { hostnameRules, rules, sidRules, type FieldDef, type Rule } from "../../lib/validation";
 
 /* ------------------------------------------------------------------ */
@@ -176,7 +176,10 @@ export type FortigateFieldKey =
     | "sid_secondary"
     | "ip_secondary"
     | "ip_lan"
-    | "loopback205";
+    | "loopback205"
+    | "bgp_as"
+    | "bgp_router_id"
+    | "bgp_prefixes";
 
 export type FortigateValues = Record<FortigateFieldKey, string>;
 
@@ -185,7 +188,76 @@ export interface FortigateOptions {
     dualLink: boolean;
     /** Both are always set; the secondary is ignored on a single-link site. */
     uplinks: Uplinks;
+    /** Peer with the customer's providers over BGP. */
+    customBgp: boolean;
+    /** Ignored unless customBgp is on. */
+    neighbors: readonly BgpNeighbor[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Custom BGP                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Main advertises the prefixes as they are. Backup prepends the router AS, so the provider
+ * prefers the main path and only uses this one when the main session is down.
+ */
+export type NeighborRole = "main" | "backup";
+
+export interface BgpNeighbor {
+    /** Stable key for the list on screen; not written to the config. */
+    id: number;
+    ip: string;
+    remoteAs: string;
+    role: NeighborRole;
+}
+
+export const NEIGHBOR_ROLE_OPTIONS: ReadonlyArray<{ value: NeighborRole; label: string }> = [
+    { value: "main", label: "Main" },
+    { value: "backup", label: "Backup" },
+];
+
+export const newNeighbor = (id: number, role: NeighborRole): BgpNeighbor => ({ id, ip: "", remoteAs: "", role });
+
+export const INITIAL_NEIGHBORS: readonly BgpNeighbor[] = [newNeighbor(1, "main")];
+
+/** 4-byte AS numbers: 1 to 4294967295, written as a plain number (no asdot, no leading zeros). */
+const isAsNumber = (value: string) => /^[1-9]\d{0,9}$/.test(value) && Number(value) <= 4_294_967_295;
+const AS_MESSAGE = "Enter an AS number from 1 to 4294967295, for example 64540.";
+
+/** "182.23.55.152/29, 10.0.0.0/24": commas, spaces or new lines between prefixes. */
+export const splitPrefixes = (value: string) => value.split(/[\s,]+/).filter(Boolean);
+
+export type NeighborErrors = Record<number, Partial<Record<"ip" | "remoteAs", string>>>;
+
+/** Errors per neighbor, keyed by its id. Empty when every neighbor is usable. */
+export function validateNeighbors(neighbors: readonly BgpNeighbor[], localAs: string): NeighborErrors {
+    const errors: NeighborErrors = {};
+    const seen = new Set<string>();
+
+    for (const neighbor of neighbors) {
+        const ip = neighbor.ip.trim();
+        const remoteAs = neighbor.remoteAs.trim();
+        const error: NeighborErrors[number] = {};
+
+        if (ip === "") error.ip = "Peer IP is required.";
+        else if (!isValidIPv4(ip)) error.ip = "Enter a valid IPv4 address, for example 182.23.102.209.";
+        else if (seen.has(ip)) error.ip = "This peer is already in the list.";
+        seen.add(ip);
+
+        if (remoteAs === "") error.remoteAs = "Remote AS is required.";
+        else if (!isAsNumber(remoteAs)) error.remoteAs = AS_MESSAGE;
+        else if (remoteAs === localAs.trim()) {
+            error.remoteAs = "Use the provider's AS. A peer in the router's own AS would be iBGP, which this doesn't set up.";
+        }
+
+        if (error.ip || error.remoteAs) errors[neighbor.id] = error;
+    }
+    return errors;
+}
+
+/** DOM id of a neighbor's input, to focus the first one with an error. */
+export const neighborFieldId = (id: number, field: "ip" | "remoteAs") => `bgp-neighbor-${id}-${field}`;
 
 /** LAN address with prefix length. Used when the LAN field is left empty. */
 export const DEFAULT_LAN_CIDR = "192.168.1.99/24";
@@ -198,9 +270,13 @@ export const INITIAL_VALUES: FortigateValues = {
     ip_secondary: "",
     ip_lan: DEFAULT_LAN_CIDR,
     loopback205: "",
+    bgp_as: "",
+    bgp_router_id: "",
+    bgp_prefixes: "",
 };
 
 const isDualLink = (options: FortigateOptions) => options.dualLink;
+const hasCustomBgp = (options: FortigateOptions) => options.customBgp;
 
 /** A static uplink needs an IP; a DHCP one gets its address from the provider. */
 const primaryLinkIsStatic = (options: FortigateOptions) =>
@@ -219,6 +295,21 @@ const largestPrefix =
     (max: number, message: string): Rule =>
     (value) =>
         (parseCidr(value)?.prefix ?? 0) > max ? message : null;
+
+/** Every prefix in the list is a valid CIDR, and none is listed twice. */
+const prefixListRule: Rule = (value) => {
+    const cidrRule = rules.cidr({ example: "182.23.55.152/29" });
+    const networks = new Set<string>();
+    for (const prefix of splitPrefixes(value)) {
+        const error = cidrRule(prefix);
+        if (error) return `${prefix}: ${error}`;
+        const subnet = getSubnet(prefix)!;
+        const key = `${subnet.network}/${subnet.prefix}`;
+        if (networks.has(key)) return `${key} is listed twice.`;
+        networks.add(key);
+    }
+    return null;
+};
 
 const linkRules = (example: string) => [
     ipWithPrefix(example),
@@ -296,5 +387,33 @@ export const FIELDS: readonly FieldDef<FortigateFieldKey, FortigateOptions>[] =
             span: "full",
             required: true,
             rules: [rules.ipv4()],
+        },
+        {
+            key: "bgp_as",
+            group: "bgp",
+            label: "Router AS",
+            placeholder: "e.g. 64540",
+            required: true,
+            visible: hasCustomBgp,
+            rules: [(value) => (isAsNumber(value) ? null : AS_MESSAGE)],
+        },
+        {
+            key: "bgp_router_id",
+            group: "bgp",
+            label: "Router ID (optional)",
+            placeholder: "Defaults to the Loopback205 IP",
+            visible: hasCustomBgp,
+            // Optional: empty keeps the template's router-id, the Loopback205 address.
+            rules: [rules.ipv4()],
+        },
+        {
+            key: "bgp_prefixes",
+            group: "bgp",
+            label: "Advertised Prefixes",
+            placeholder: "e.g. 182.23.55.152/29, comma-separated",
+            span: "full",
+            required: true,
+            visible: hasCustomBgp,
+            rules: [prefixListRule],
         },
     ];
