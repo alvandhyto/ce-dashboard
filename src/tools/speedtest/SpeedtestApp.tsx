@@ -108,7 +108,7 @@ function gaugeFor({ stage, value, samples }: SpeedtestView) {
 }
 
 const HEADER_ICON = (
-    <img src="/icons/lintaslogo.png" alt="" className="h-8 w-8 shrink-0" />
+    <img src="/icons/lintaslogo.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0" />
 );
 
 const STAMP = new Intl.DateTimeFormat(undefined, {

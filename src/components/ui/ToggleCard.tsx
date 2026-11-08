@@ -14,7 +14,8 @@ export function ToggleCard({ label, description, checked, onChange, disabled = f
     return (
         <label
             className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 transition-colors",
+                // relative: keeps the sr-only checkbox inside the card (see SegmentedControl).
+                "relative flex items-start gap-3 rounded-lg border p-3 transition-colors",
                 checked
                     ? "border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-white/5"
                     : "border-slate-200 dark:border-white/10",

@@ -7,7 +7,7 @@
  */
 import { getSubnet } from "../../lib/cidr";
 import type { Replacements } from "../../lib/placeholders";
-import { rules, type FieldDef } from "../../lib/validation";
+import { hostnameRules, rules, sidRules, type FieldDef } from "../../lib/validation";
 
 /* ------------------------------------------------------------------ */
 /* Models and templates                                                 */
@@ -34,6 +34,9 @@ export const templateFileName = (series: Series) => TEMPLATES[series];
 
 export const templateUrl = (series: Series) =>
     encodeURI(TEMPLATE_DIR + TEMPLATES[series]);
+
+/** Used when the hostname is empty, so the preview and the download agree. */
+export const FALLBACK_FILENAME = "chatime";
 
 export const outputFileName = (hostname: string, fallback: string) =>
     `${hostname || fallback}.conf`;
@@ -70,11 +73,6 @@ export const INITIAL_VALUES: ChatimeValues = {
     loopback205: "",
 };
 
-/** SIDs go into the config unquoted, so no spaces or quotes. */
-const sidRules = [
-    rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes."),
-];
-
 /** Order here is the order on screen within each group. */
 export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
     {
@@ -84,14 +82,7 @@ export const FIELDS: readonly FieldDef<ChatimeFieldKey, ChatimeOptions>[] = [
         placeholder: "e.g. 2023370452-CHATIME-RAMAI",
         span: "full",
         required: true,
-        // FortiOS: up to 35 characters; letters, digits, hyphen and underscore only.
-        rules: [
-            rules.maxLength(35),
-            rules.pattern(
-                /^[A-Za-z0-9_-]+$/,
-                "Use letters, numbers, hyphens and underscores only.",
-            ),
-        ],
+        rules: hostnameRules,
     },
     {
         key: "sid_airfiber",

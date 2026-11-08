@@ -71,16 +71,11 @@ export function AccessGatePage({ onSubmit, onCancel }: AccessGatePageProps) {
                     />
 
                     <div className="mt-6 flex flex-col gap-2">
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            size="lg"
-                            disabled={key === ""}
-                        >
-                            CONTINUE
+                        <Button type="submit" variant="primary" size="lg" className="uppercase">
+                            Unlock Generators
                         </Button>
-                        <Button size="lg" variant="ghost" onClick={onCancel}>
-                            CANCEL
+                        <Button size="lg" variant="ghost" className="uppercase" onClick={onCancel}>
+                            Cancel
                         </Button>
                     </div>
                 </form>

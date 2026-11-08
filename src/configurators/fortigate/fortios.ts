@@ -176,7 +176,7 @@ export const isSet = (node: Node, key?: string): node is SetNode =>
     node.verb === "set" &&
     (key === undefined || node.key === key);
 
-export const unquote = (token: string): string =>
+const unquote = (token: string): string =>
     token.length >= 2 && token.startsWith('"') && token.endsWith('"')
         ? token.slice(1, -1)
         : token;
@@ -185,22 +185,16 @@ export const unquote = (token: string): string =>
 export const valueOf = (node: SetNode): string =>
     node.text.replace(/^\S+\s+\S+\s*/, "");
 
+export const quote = (value: string): string => `"${value}"`;
+
 export const editName = (node: EditNode): string => unquote(node.name);
 
-export function findConfig(
-    parent: Container,
-    name: string,
-): ConfigNode | undefined {
-    return parent.children.filter(isConfig).find((node) => node.name === name);
+export function findConfig(parent: Container, name: string): ConfigNode | undefined {
+    return parent.children.find((node): node is ConfigNode => isConfig(node) && node.name === name);
 }
 
-export function findEdit(
-    parent: Container,
-    name: string,
-): EditNode | undefined {
-    return parent.children
-        .filter(isEdit)
-        .find((node) => editName(node) === name);
+export function findEdit(parent: Container, name: string): EditNode | undefined {
+    return parent.children.find((node): node is EditNode => isEdit(node) && editName(node) === name);
 }
 
 /* ------------------------------------------------------------------ */
@@ -213,6 +207,22 @@ export const newSet = (key: string, value: string): SetNode => ({
     key,
     text: `set ${key} ${value}`,
 });
+
+export const newUnset = (key: string): SetNode => ({
+    kind: "set",
+    verb: "unset",
+    key,
+    text: `unset ${key}`,
+});
+
+/** True when `unset <key>` appears anywhere under `node`: tells how a template's FortiOS version exports a block. */
+export function hasUnset(node: Container, key: string): boolean {
+    return node.children.some(
+        (child) =>
+            (child.kind === "set" && child.verb === "unset" && child.key === key) ||
+            ((child.kind === "config" || child.kind === "edit") && hasUnset(child, key)),
+    );
+}
 
 /** A new `edit` block from key/value pairs. The name is written as given, so pass `"wan"` quoted. */
 export const newEdit = (

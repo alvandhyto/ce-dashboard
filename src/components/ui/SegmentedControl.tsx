@@ -36,7 +36,9 @@ export function SegmentedControl<T extends string>({
             </legend>
             <div className="grid h-10 grid-flow-col auto-cols-fr gap-0.5 rounded-lg border border-slate-300 bg-slate-100 p-0.5 dark:border-white/15 dark:bg-[#0F1218]">
                 {options.map((option) => (
-                    <label key={option.value} className="flex">
+                    // relative: anchors the sr-only (absolute) radio here. Otherwise, inside a scrolling panel,
+                    // it is placed against the page and makes the page taller than the layout.
+                    <label key={option.value} className="relative flex">
                         <input
                             type="radio"
                             name={name}

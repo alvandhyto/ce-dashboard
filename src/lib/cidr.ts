@@ -109,6 +109,12 @@ export function getSubnet(input: string | Cidr): Subnet | null {
     };
 }
 
+/** True when both addresses fall in the same subnet under `netmask` (dotted quad). Expects valid IPv4. */
+export function sameSubnet(a: string, b: string, netmask: string): boolean {
+    const mask = ipToInt(netmask);
+    return ((ipToInt(a) & mask) >>> 0) === ((ipToInt(b) & mask) >>> 0);
+}
+
 /** True when the entered address can be assigned to an interface (not the network or broadcast address). */
 export function isUsableHost(subnet: Subnet): boolean {
     const ip = ipToInt(subnet.ip);

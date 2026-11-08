@@ -4,6 +4,7 @@ import {
 } from "../../lib/placeholders";
 import {
     buildReplacements,
+    FALLBACK_FILENAME,
     outputFileName,
     type ChatimeValues,
 } from "./definition";
@@ -25,7 +26,7 @@ export function generateChatimeConfig(
 
     return {
         content,
-        filename: outputFileName(values.hostname, "chatime"),
+        filename: outputFileName(values.hostname, FALLBACK_FILENAME),
         warnings:
             unresolved.length > 0
                 ? [

@@ -4,7 +4,15 @@
  * config (sections/) only copies values and never derives them.
  */
 import { getSubnet, type Subnet } from "../../lib/cidr";
-import { DEFAULT_LAN_CIDR, type FortigateOptions, type FortigateValues, type UplinkRole } from "./definition";
+import {
+    DEFAULT_LAN_CIDR,
+    splitPrefixes,
+    type BgpNeighbor,
+    type FortigateOptions,
+    type FortigateValues,
+    type NeighborRole,
+    type UplinkRole,
+} from "./definition";
 
 export type Addressing =
     | { kind: "static"; ip: string; netmask: string; gateway: string }
@@ -27,12 +35,24 @@ export interface LanPlan {
     dhcpEnd: string;
 }
 
+export interface CustomBgpPlan {
+    /** Replaces the template's `set as`. */
+    as: string;
+    /** Replaces the template's router-id (the Loopback205 address) when set. */
+    routerId?: string;
+    /** Network addresses, so a host typed inside the subnet still gives the right prefix. */
+    prefixes: { network: string; netmask: string; cidr: string }[];
+    neighbors: { ip: string; remoteAs: string; role: NeighborRole }[];
+}
+
 export interface SitePlan {
     hostname: string;
     /** Primary first. One entry on a single-link site, two on dual link. */
     uplinks: UplinkPlan[];
     lan: LanPlan;
     loopback: string;
+    /** Null unless custom BGP is on. */
+    customBgp: CustomBgpPlan | null;
 }
 
 /**
@@ -90,7 +110,7 @@ export function lanPlan(cidr: string): LanPlan {
 }
 
 /** Turns validated form input into the plan. Throws on input the form should have refused. */
-export function buildPlan(values: FortigateValues, { dualLink, uplinks }: FortigateOptions): SitePlan {
+export function buildPlan(values: FortigateValues, { dualLink, uplinks, customBgp, neighbors }: FortigateOptions): SitePlan {
     const uplink = (role: UplinkRole, sid: string, cidr: string): UplinkPlan => ({
         role,
         port: uplinks[role].interface,
@@ -106,6 +126,20 @@ export function buildPlan(values: FortigateValues, { dualLink, uplinks }: Fortig
         ],
         lan: lanPlan(values.ip_lan || DEFAULT_LAN_CIDR),
         loopback: values.loopback205,
+        customBgp: customBgp ? customBgpPlan(values, neighbors) : null,
+    };
+}
+
+function customBgpPlan(values: FortigateValues, neighbors: readonly BgpNeighbor[]): CustomBgpPlan {
+    if (neighbors.length === 0) throw new Error("Custom BGP needs at least one neighbor.");
+    return {
+        as: values.bgp_as,
+        routerId: values.bgp_router_id || undefined,
+        prefixes: splitPrefixes(values.bgp_prefixes).map((prefix) => {
+            const subnet = requireSubnet(prefix, "advertised");
+            return { network: subnet.network, netmask: subnet.netmask, cidr: `${subnet.network}/${subnet.prefix}` };
+        }),
+        neighbors: neighbors.map(({ ip, remoteAs, role }) => ({ ip: ip.trim(), remoteAs: remoteAs.trim(), role })),
     };
 }
 

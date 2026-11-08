@@ -24,6 +24,7 @@ import {
     isEdit,
     isSet,
     newSet,
+    quote,
     readSet,
     removeNode,
     type Document,
@@ -77,7 +78,7 @@ function writeUplink(edit: EditNode, uplink: UplinkPlan): void {
             : newSet("ip", `${addressing.ip} ${addressing.netmask}`),
         newSet("allowaccess", UPLINK_ALLOWACCESS),
     ];
-    const after = [newSet("alias", `"${uplink.sid}"`), newSet("role", "wan")];
+    const after = [newSet("alias", quote(uplink.sid)), newSet("role", "wan")];
 
     const type = edit.children.findIndex((node) => isSet(node, "type"));
     if (type === -1) {

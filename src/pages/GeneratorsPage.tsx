@@ -19,7 +19,7 @@ export function GeneratorsPage({ onOpen, onBack }: GeneratorsPageProps) {
         <AppShell>
             <AppHeader
                 title="Generators"
-                subtitle="Standardized configuration generators for various projects"
+                subtitle="FortiGate configs for standard, KFC and Chatime sites"
                 onBack={onBack}
             />
 

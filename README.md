@@ -25,7 +25,7 @@ Everything shares one design system and one registry, so adding a new tool or ge
 | Tool            | What it does                                                                                                                                 |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Speedtest**   | Measures latency, jitter, download and upload with a live gauge. Built on the [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test) engine. |
-| **Generators**  | Menu of configuration generators, behind an access key. Currently: **FortiGate** (30G and 40F, FortiOS 7.2 and 7.4, single or dual link).    |
+| **Generators**  | Menu of configuration generators, behind an access key. Currently: **FortiGate** (30G and 40F, FortiOS 7.2 and 7.4, single or dual link), **KFC** and **Chatime**. |
 | **Placeholder** | Tic-tac-toe against the computer. A slot for whatever comes next.                                                                            |
 
 ## Tech stack

@@ -47,8 +47,7 @@ export const APPS: Record<AppId, AppDefinition> = {
     speedtest: {
         id: "speedtest",
         title: "Speedtest",
-        description:
-            "This speedtest application delivers accurate, real-time measurement of internet performance, including latency, jitter, download speed, upload speed.",
+        description: "Measures latency, jitter, and download and upload speed between your browser and this server.",
         icon: <Gauge className="h-5 w-5" />,
         accent: "blue",
         section: "main",
@@ -57,8 +56,7 @@ export const APPS: Record<AppId, AppDefinition> = {
     placeholder: {
         id: "placeholder",
         title: "Placeholder",
-        description:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        description: "Tic-tac-toe against the computer, holding the slot for the next tool.",
         icon: <Folder className="h-5 w-5" />,
         accent: "amber",
         section: "main",
@@ -67,8 +65,8 @@ export const APPS: Record<AppId, AppDefinition> = {
     fortigate: {
         id: "fortigate",
         title: "FortiGate",
-        description: "FortiGate firewall standardized configuration.",
-        icon: <img src="/icons/fortilogo.ico" alt="" className="h-6 w-6" />,
+        description: "Standard internet-only FortiGate config for the 30G and 40F, single or dual link.",
+        icon: <img src="/icons/fortilogo.ico" alt="" width={24} height={24} className="h-6 w-6" />,
         accent: "rose",
         section: "generators",
         ...onDemand(() => import("../configurators/fortigate/FortigateConfigurator")),
@@ -78,7 +76,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         title: "KFC FortiGate",
         description:
             "KFC branch configuration for the Project Replace Fortigate 50E: 40F, 30G, and 30G with a switch.",
-        icon: <img src="/icons/kfclogo.png" alt="" className="h-6 w-6" />,
+        icon: <img src="/icons/kfclogo.png" alt="" width={24} height={24} className="h-6 w-6" />,
         accent: "rose",
         section: "generators",
         ...onDemand(() => import("../configurators/kfc/KfcConfigurator")),
@@ -88,7 +86,7 @@ export const APPS: Record<AppId, AppDefinition> = {
         title: "Chatime FortiGate",
         description:
             "Chatime branch configuration for the Project Replace Versa: 40F and 30G.",
-        icon: <img src="/icons/chatimelogo.png" alt="" className="h-6 w-6" />,
+        icon: <img src="/icons/chatimelogo.png" alt="" width={24} height={24} className="h-6 w-6" />,
         accent: "violet",
         section: "generators",
         ...onDemand(() => import("../configurators/chatime/ChatimeConfigurator")),
@@ -109,8 +107,7 @@ const launcherFor = (app: AppDefinition): Launcher => ({
 const GENERATORS_LAUNCHER: Launcher = {
     key: "generators",
     title: "Generators",
-    description:
-        "Reliable tools designed to generate standardized configurations, ensuring consistency and operational efficiency.",
+    description: "Fill in a site's details and get a ready-to-load FortiGate config from the project template.",
     icon: <Terminal className="h-5 w-5" />,
     accent: "rose",
     route: { name: "generators" },

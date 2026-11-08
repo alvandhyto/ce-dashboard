@@ -81,6 +81,15 @@ export const rules = {
             regex.test(value) ? null : message,
 };
 
+/** FortiOS hostnames: up to 35 characters; letters, digits, hyphen and underscore only. */
+export const hostnameRules: Rule[] = [
+    rules.maxLength(35),
+    rules.pattern(/^[A-Za-z0-9_-]+$/, "Use letters, numbers, hyphens and underscores only."),
+];
+
+/** Circuit IDs end up inside quoted FortiOS strings (aliases, names), so no quotes and no spaces. */
+export const sidRules: Rule[] = [rules.pattern(/^[^\s"]+$/, "The SID can't contain spaces or quotes.")];
+
 export function getVisibleFields<K extends string, C>(
     fields: readonly FieldDef<K, C>[],
     context: C,

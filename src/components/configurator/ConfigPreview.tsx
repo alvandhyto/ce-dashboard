@@ -206,6 +206,8 @@ export const ConfigPreview = memo(function ConfigPreview({
                 <div
                     role="region"
                     aria-label="Generated configuration"
+                    // Browser page translation would rewrite CLI keywords and break the config.
+                    translate="no"
                     tabIndex={0}
                     className="h-full overflow-auto py-3 font-mono text-[13px] leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400/50"
                 >
@@ -223,7 +225,7 @@ export const ConfigPreview = memo(function ConfigPreview({
                             No configuration yet
                         </p>
                         <p className="mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">
-                            Fill in the parameters, then select Generate config.
+                            Fill in the parameters, then select Generate Configuration.
                         </p>
                     </div>
                 </div>
